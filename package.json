@@ -44,8 +44,9 @@
     "dependencies": {
         "@types/tmp": "^0.1.0",
         "tmp-promise": "^2.0.2",
-        "vscode-languageclient": "^5.2.1",
-        "vscode-languageserver": "^5.2.1"
+        "vscode-languageclient": "^6.1.1",
+        "vscode-languageserver": "^6.1.1",
+        "vscode-languageserver-textdocument": "^1.0.1"
     },
     "devDependencies": {
         "vscode": "^1.1.36"

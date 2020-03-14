@@ -6,16 +6,18 @@
 import {
 	createConnection,
 	TextDocuments,
-	TextDocument,
 	Diagnostic,
 	DiagnosticSeverity,
 	ProposedFeatures,
 	InitializeParams,
 	DidChangeConfigurationNotification,
-	Range
+	Range,
+	TextDocumentSyncKind
 } from 'vscode-languageserver';
 
-import Uri from 'vscode-uri'
+import { TextDocument } from 'vscode-languageserver-textdocument';
+
+const documents = new TextDocuments(TextDocument);
 
 import { withFile } from 'tmp-promise'
 
@@ -26,10 +28,6 @@ const { spawn } = require('child_process');
 // Create a connection for the server. The connection uses Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
 let connection = createConnection(ProposedFeatures.all);
-
-// Create a simple text document manager. The text document manager
-// supports full document sync only
-let documents: TextDocuments = new TextDocuments();
 
 let hasConfigurationCapability: boolean = false;
 let hasWorkspaceFolderCapability: boolean = false;
@@ -56,7 +54,7 @@ connection.onInitialize((params: InitializeParams) => {
 
 	return {
 		capabilities: {
-			textDocumentSync: documents.syncKind,
+			textDocumentSync: TextDocumentSyncKind.Full,
 			// Tell the client that the server DOES NOT support code completion
 			completionProvider: {
 				resolveProvider: false

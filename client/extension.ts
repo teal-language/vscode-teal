@@ -1,7 +1,7 @@
-/**
+/* --------------------------------------------------------------------------------------------
  * Based on lsp-sample.
  * See LICENSE-vscode-extension-samples at the root of the project for licensing info.
- */
+ * ------------------------------------------------------------------------------------------ */
 
 import * as path from 'path';
 import { workspace, ExtensionContext } from 'vscode';
