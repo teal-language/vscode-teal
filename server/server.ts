@@ -17,6 +17,10 @@ import {
 
 import Uri from 'vscode-uri'
 
+import { withFile } from 'tmp-promise'
+
+const util = require("util");
+const write = util.promisify(require("fs").write);
 const { spawn } = require('child_process');
 
 // Create a connection for the server. The connection uses Node's IPC as a transport.
@@ -154,11 +158,13 @@ async function runTLCheck(filePath: string) {
 }
 
 async function validateTextDocument(textDocument: TextDocument): Promise<void> {
-	// In this simple example we get the settings for every validate run.
 	let settings = await getDocumentSettings(textDocument.uri);
-	let filePath = Uri.parse(textDocument.uri).fsPath;
 
-	let checkResult = await runTLCheck(filePath);
+	let checkResult = await withFile(async ({ path, fd }) => {
+		await write(fd, textDocument.getText());
+
+		return await runTLCheck(path);
+	});
 
 	let errorPattern = /^.*:(\d+):(\d+): (.+)$/gm;
 
@@ -169,7 +175,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 		let lineNumber = Number.parseInt(syntaxError[1]) - 1;
 		let columnNumber = Number.parseInt(syntaxError[2]) - 1;
 		let errorMessage = syntaxError[3];
-		
+
 		let range = Range.create(lineNumber, columnNumber, lineNumber, columnNumber + 1);
 
 		let diagnostic: Diagnostic = {

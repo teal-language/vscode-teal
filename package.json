@@ -4,6 +4,10 @@
     "description": "TL language support for Visual Studio Code",
     "version": "0.0.1",
     "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "git://github.com/pdesaulniers/vscode-tl.git"
+    },
     "engines": {
         "vscode": "^1.42.0"
     },
@@ -12,8 +16,8 @@
     ],
     "main": "./out/client/extension",
     "activationEvents": [
-		"onLanguage:tl"
-	],
+        "onLanguage:tl"
+    ],
     "contributes": {
         "languages": [
             {
@@ -37,14 +41,15 @@
         ]
     },
     "dependencies": {
+        "@types/tmp": "^0.1.0",
+        "tmp-promise": "^2.0.2",
         "vscode": "^1.1.36",
         "vscode-languageclient": "^5.2.1",
         "vscode-languageserver": "^5.2.1"
     },
     "scripts": {
-		"vscode:prepublish": "cd client && npm run update-vscode && cd .. && npm run compile",
-		"compile": "tsc -b",
-		"watch": "tsc -b -w",
-		"postinstall": "cd client && npm install && cd ../server && npm install && cd .."
-	}
+        "vscode:prepublish": "cd client && npm run update-vscode && cd .. && npm run compile",
+        "compile": "tsc -b",
+        "watch": "tsc -b -w"
+    }
 }

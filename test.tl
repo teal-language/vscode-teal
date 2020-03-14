@@ -7,7 +7,7 @@ local PointMetatable: METATABLE = {
 	__index = Point
 }
 
-function Point.new(x: number, y: number): Point
+function Point.new(x: nmuber, y: number): Point
 	local self = setmetatable({}, PointMetatable) as Point
 
 	self.x = x or 0
