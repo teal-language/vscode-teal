@@ -12,7 +12,9 @@ import {
 	InitializeParams,
 	DidChangeConfigurationNotification,
 	Range,
-	TextDocumentSyncKind
+	TextDocumentSyncKind,
+	TextDocumentPositionParams,
+	CompletionItem
 } from 'vscode-languageserver';
 
 import { TextDocument } from 'vscode-languageserver-textdocument';
@@ -193,6 +195,15 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	// Send the computed diagnostics to VSCode.
 	connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
 }
+
+// This handler provides the initial list of the completion items.
+connection.onCompletion(
+	(_textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
+		// TODO
+		return [
+		];
+	}
+);
 
 // Make the text document manager listen on the connection
 // for open, change and close text document events
