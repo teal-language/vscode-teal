@@ -176,7 +176,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 		let columnNumber = Number.parseInt(syntaxError[2]) - 1;
 		let errorMessage = syntaxError[3];
 
-		let range = Range.create(lineNumber, columnNumber, lineNumber, columnNumber + 1);
+		let range = Range.create(lineNumber, columnNumber, lineNumber, columnNumber);
 
 		let diagnostic: Diagnostic = {
 			severity: DiagnosticSeverity.Error,
