@@ -1,18 +1,32 @@
-// A launch configuration that launches the extension inside a new window
-// Use IntelliSense to learn about possible attributes.
-// Hover to view descriptions of existing attributes.
-// For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+// A launch configuration that compiles the extension and then opens it inside a new window
 {
 	"version": "0.2.0",
-    "configurations": [
-        {
-            "name": "Extension",
-            "type": "extensionHost",
-            "request": "launch",
-            "runtimeExecutable": "${execPath}",
-            "args": [
-                "--extensionDevelopmentPath=${workspaceFolder}"
-            ]
-        }
-    ]
+	"configurations": [
+		{
+			"type": "extensionHost",
+			"request": "launch",
+			"name": "Launch Client",
+			"runtimeExecutable": "${execPath}",
+			"args": ["--extensionDevelopmentPath=${workspaceRoot}"],
+			"outFiles": ["${workspaceRoot}/out/client/**/*.js"],
+			"preLaunchTask": {
+				"type": "npm",
+				"script": "watch"
+			}
+		},
+		{
+			"type": "node",
+			"request": "attach",
+			"name": "Attach to Server",
+			"port": 6009,
+			"restart": true,
+			"outFiles": ["${workspaceRoot}/out/server/**/*.js"]
+		}
+	],
+	"compounds": [
+		{
+			"name": "Client + Server",
+			"configurations": ["Launch Client", "Attach to Server"]
+		}
+	]
 }

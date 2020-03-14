@@ -4,22 +4,46 @@
     "description": "TL language support for Visual Studio Code",
     "version": "0.0.1",
     "engines": {
-        "vscode": "^1.43.0"
+        "vscode": "^1.42.0"
     },
     "categories": [
         "Programming Languages"
     ],
+    "main": "./out/client/extension",
+    "activationEvents": [
+		"onLanguage:tl"
+	],
     "contributes": {
-        "languages": [{
-            "id": "tl",
-            "aliases": ["TL", "tl"],
-            "extensions": [".tl"],
-            "configuration": "./language-configuration.json"
-        }],
-        "grammars": [{
-            "language": "tl",
-            "scopeName": "source.tl",
-            "path": "./syntaxes/tl.tmLanguage.json"
-        }]
-    }
+        "languages": [
+            {
+                "id": "tl",
+                "aliases": [
+                    "TL",
+                    "tl"
+                ],
+                "extensions": [
+                    ".tl"
+                ],
+                "configuration": "./language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "tl",
+                "scopeName": "source.tl",
+                "path": "./syntaxes/tl.tmLanguage.json"
+            }
+        ]
+    },
+    "dependencies": {
+        "vscode": "^1.1.36",
+        "vscode-languageclient": "^5.2.1",
+        "vscode-languageserver": "^5.2.1"
+    },
+    "scripts": {
+		"vscode:prepublish": "cd client && npm run update-vscode && cd .. && npm run compile",
+		"compile": "tsc -b",
+		"watch": "tsc -b -w",
+		"postinstall": "cd client && npm install && cd ../server && npm install && cd .."
+	}
 }

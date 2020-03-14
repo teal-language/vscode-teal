@@ -5,16 +5,31 @@
 	"tasks": [
 		{
 			"type": "npm",
-			"script": "watch",
-			"problemMatcher": "$tsc-watch",
-			"isBackground": true,
+			"script": "compile",
+			"group": "build",
 			"presentation": {
+				"panel": "dedicated",
 				"reveal": "never"
 			},
+			"problemMatcher": [
+				"$tsc"
+			]
+		},
+		{
+			"type": "npm",
+			"script": "watch",
+			"isBackground": true,
 			"group": {
 				"kind": "build",
 				"isDefault": true
-			}
+			},
+			"presentation": {
+				"panel": "dedicated",
+				"reveal": "never"
+			},
+			"problemMatcher": [
+				"$tsc-watch"
+			]
 		}
 	]
 }
