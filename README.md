@@ -1,4 +1,4 @@
-# TL support for Visual Studio Code
+# TL for Visual Studio Code
 
 Provides a language server and syntax highlighting for [TL](https://github.com/hishamhm/tl) in VSCode.
 
@@ -9,7 +9,7 @@ Provides a language server and syntax highlighting for [TL](https://github.com/h
 
 ## Requirements
 
-Make sure that TL is available in your path:
+Make sure that TL is available in your PATH:
 ```
 luarocks install tl
 ```
