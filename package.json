@@ -3,6 +3,7 @@
     "displayName": "vscode-tl",
     "description": "TL language support for Visual Studio Code",
     "version": "0.0.1",
+    "license": "MIT",
     "engines": {
         "vscode": "^1.42.0"
     },

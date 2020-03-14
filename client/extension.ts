@@ -1,5 +1,6 @@
 /**
- * Based on https://code.visualstudio.com/api/language-extensions/language-server-extension-guide#explaining-the-language-client
+ * Based on lsp-sample.
+ * See LICENSE-vscode-extension-samples at the root of the project for licensing info.
  */
 
 import * as path from 'path';
@@ -13,8 +14,6 @@ import {
 } from 'vscode-languageclient';
 
 let client: LanguageClient;
-
-console.log("Running client...");
 
 export function activate(context: ExtensionContext) {
 	// The server is implemented in node
