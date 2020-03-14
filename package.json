@@ -2,7 +2,7 @@
     "name": "vscode-tl",
     "displayName": "vscode-tl",
     "description": "TL language support for Visual Studio Code",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "license": "MIT",
     "repository": {
         "type": "git",

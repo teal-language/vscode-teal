@@ -213,7 +213,7 @@
 			"name": "constant.other.placeholder.tl"
 		},
 		{
-			"match": "\\b(break|do|else|for|if|elseif|goto|return|then|repeat|while|until|end|function|local|in)\\b",
+			"match": "\\b(break|do|else|for|if|elseif|goto|return|then|repeat|while|until|end|function|local|in|record|global|enum)\\b",
 			"name": "keyword.control.tl"
 		},
 		{
@@ -233,12 +233,16 @@
 			"name": "support.function.library.tl"
 		},
 		{
-			"match": "\\b(and|or|not)\\b",
+			"match": "\\b(and|or|not|as)\\b",
 			"name": "keyword.operator.tl"
 		},
 		{
 			"match": "\\b([a-zA-Z_][a-zA-Z0-9_]*)\\b(?=\\s*(?:[({\"']|\\[\\[))",
 			"name": "support.function.any-method.tl"
+		},
+		{
+			"match": "(?x) \\b\n(string|boolean|any|number|METATABLE)\n\\b",
+			"name": "support.type.primitive.tl"
 		},
 		{
 			"match": "(?<=[^.]\\.|:)\\b([a-zA-Z_][a-zA-Z0-9_]*)",
