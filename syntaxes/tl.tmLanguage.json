@@ -33,34 +33,34 @@
 			"name": "meta.function.tl",
 			"patterns": [
 				{
-					"begin": "(?<=[,\\(])",
-					"end": "[:\\)]",
-					"patterns": [
-						{
-							"begin": "([a-zA-Z]+)",
-							"beginCaptures": {
-								"0": {
-									"name": "variable.parameter.function.tl"
-								}
-							},
-							"end": "(?=[:\\)])"
+					"comment": "First function argument",
+					"begin": "(?<=[\\(])",
+					"end": "([a-zA-Z]+)",
+					"endCaptures": {
+						"0": {
+							"name": "variable.parameter.function.tl"
 						}
-					]
+					}
 				},
 				{
-					"begin": "(?<=:)",
-					"end": "[,\\)]",
-					"patterns": [
-						{
-							"begin": "([a-zA-Z]+)",
-							"beginCaptures": {
-								"0": {
-									"name": "support.type.tl"
-								}
-							},
-							"end": "(?=[,\\)])"
+					"comment": "Nth function argument",
+					"begin": ",",
+					"end": "([a-zA-Z]+)",
+					"endCaptures": {
+						"0": {
+							"name": "variable.parameter.function.tl"
 						}
-					]
+					}
+				},
+				{
+					"comment": "Colon followed by type",
+					"begin": ":",
+					"end": "([a-zA-Z]+)",
+					"endCaptures": {
+						"0": {
+							"name": "support.type.tl"
+						}
+					}
 				}
 			]
 		}
