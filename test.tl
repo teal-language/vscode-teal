@@ -3,6 +3,13 @@ local Point = record
 	y: number
 end
 
+global Direction = enum
+   "north"
+   "south"
+   "east"
+   "west"
+end
+
 local PointMetatable: METATABLE = {
 	__index = Point
 }
