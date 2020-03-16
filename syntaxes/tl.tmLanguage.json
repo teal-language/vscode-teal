@@ -35,7 +35,7 @@
 				{
 					"comment": "First function argument",
 					"begin": "(?<=[\\(])",
-					"end": "([a-zA-Z]+)",
+					"end": "([a-zA-Z_][a-zA-Z0-9_]*)",
 					"endCaptures": {
 						"0": {
 							"name": "variable.parameter.function.tl"
@@ -45,7 +45,7 @@
 				{
 					"comment": "Nth function argument",
 					"begin": ",",
-					"end": "([a-zA-Z]+)",
+					"end": "([a-zA-Z_][a-zA-Z0-9_]*)",
 					"endCaptures": {
 						"0": {
 							"name": "variable.parameter.function.tl"
@@ -55,7 +55,7 @@
 				{
 					"comment": "Colon followed by type",
 					"begin": ":",
-					"end": "([a-zA-Z]+)",
+					"end": "([a-zA-Z_][a-zA-Z0-9_]*)",
 					"endCaptures": {
 						"0": {
 							"name": "support.type.tl"
