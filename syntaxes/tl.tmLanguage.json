@@ -33,12 +33,34 @@
 			"name": "meta.function.tl",
 			"patterns": [
 				{
-					"match": "(?<!:)\\s*[a-zA-Z]+\\s*(?=[:)]|$)",
-					"name": "variable.parameter.function.tl"
+					"begin": "(?<=[,\\(])",
+					"end": "[:\\)]",
+					"patterns": [
+						{
+							"begin": "([a-zA-Z]+)",
+							"beginCaptures": {
+								"0": {
+									"name": "variable.parameter.function.tl"
+								}
+							},
+							"end": "(?=[:\\)])"
+						}
+					]
 				},
 				{
-					"match": "(?<!,)\\s*[a-zA-Z]+\\s*(?=[,)]|$)",
-					"name": "support.type.tl"
+					"begin": "(?<=:)",
+					"end": "[,\\)]",
+					"patterns": [
+						{
+							"begin": "([a-zA-Z]+)",
+							"beginCaptures": {
+								"0": {
+									"name": "support.type.tl"
+								}
+							},
+							"end": "(?=[,\\)])"
+						}
+					]
 				}
 			]
 		}
