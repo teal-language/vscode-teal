@@ -54,8 +54,8 @@
         "@types/vscode": "^1.43.0"
     },
     "scripts": {
-        "vscode:prepublish": "npm run compile",
-        "compile": "tsc -b",
+        "vscode:prepublish": "npm run build",
+        "build": "tsc -b",
         "watch": "tsc -b -w"
     }
 }
