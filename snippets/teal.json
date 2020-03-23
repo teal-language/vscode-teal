@@ -16,20 +16,20 @@
 	"fori": {
 		"prefix": "fori",
 		"body": [
-			"for k, v in ipairs(${1:seq}) do",
+			"for ${1:k}, ${2:v} in ipairs(${3:sequence}) do",
 			"\t$0",
 			"end"
 		],
-		"description": "\"ipairs\" loop"
+		"description": "ipairs loop"
 	},
 	"forp": {
 		"prefix": "forp",
 		"body": [
-			"for k, v in pairs(${1:seq}) do",
+			"for ${1:k}, ${2:v} in pairs(${3:sequence}) do",
 			"\t$0",
 			"end"
 		],
-		"description": "\"pairs\" loop"
+		"description": "pairs loop"
 	},
 	"lrec": {
 		"prefix": "lrec",
