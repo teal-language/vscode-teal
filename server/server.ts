@@ -14,7 +14,11 @@ import {
 	Range,
 	TextDocumentSyncKind,
 	TextDocumentPositionParams,
-	CompletionItem
+	CompletionItem,
+	MessageActionItem,
+	ShowMessageRequestParams,
+	MessageType,
+	ShowMessageRequest
 } from 'vscode-languageserver';
 
 import { TextDocument } from 'vscode-languageserver-textdocument';
@@ -128,43 +132,69 @@ documents.onDidClose(e => {
 	documentSettings.delete(e.document.uri);
 });
 
+async function showErrorMessage(message: string, ...actions: MessageActionItem[]) {
+	let params: ShowMessageRequestParams = { type: MessageType.Error, message, actions };
+
+	return await connection.sendRequest(ShowMessageRequest.type, params);
+}
+
 // The content of a text document has changed. This event is emitted
 // when the text document first opened or when its content has changed.
 documents.onDidChangeContent(change => {
 	validateTextDocument(change.document);
 });
 
-// Based on https://stackoverflow.com/questions/58570325/how-to-turn-child-process-spawns-promise-syntax-to-async-await-syntax
-async function runTLCheck(filePath: string) {
-	const child = spawn('tl', ["check", filePath]);
+class TLNotFoundError extends Error { /* ... */ }
 
-	let data = "";
+async function runTLCheck(filePath: string): Promise<string> {
+	let child = spawn('tl', ["check", filePath]);
 
-	for await (const chunk of child.stdout) {
-		data += chunk;
-	}
+	return await new Promise(async function (resolve, reject) {
+		let stdout = "";
+		let stderr = "";
 
-	let error = "";
+		child.on('error', function (error: any) {
+			if (error.code === 'ENOENT') {
+				reject(new TLNotFoundError("Could not find the tl executable. Please make sure that it is available in the PATH."));
+			} else {
+				reject(error);
+			}
+		});
 
-	for await (const chunk of child.stderr) {
-		error += chunk;
-	}
+		child.on('close', function (exitCode: any) {
+			resolve(stderr);
+		});
 
-	const exitCode = await new Promise((resolve, reject) => {
-		child.on('close', resolve);
+		for await (const chunk of child.stdout) {
+			stdout += chunk;
+		}
+
+		for await (const chunk of child.stderr) {
+			stderr += chunk;
+		}
 	});
-
-	return error;
 }
 
 async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	let settings = await getDocumentSettings(textDocument.uri);
 
-	let checkResult = await withFile(async ({ path, fd }) => {
-		await write(fd, textDocument.getText());
+	let checkResult: string;
 
-		return await runTLCheck(path);
-	});
+	try {
+		checkResult = await withFile(async ({ path, fd }) => {
+			await write(fd, textDocument.getText());
+
+			try {
+				let result = await runTLCheck(path);
+				return result;
+			} catch (error) {
+				throw error;
+			}
+		});
+	} catch (error) {
+		await showErrorMessage(error.message);
+		return;
+	}
 
 	let errorPattern = /^.*:(\d+):(\d+): (.+)$/gm;
 

@@ -37,7 +37,7 @@ export function activate(context: ExtensionContext) {
 	// Options to control the language client
 	let clientOptions: LanguageClientOptions = {
 		// Register the server for .tl files
-		documentSelector: [{ scheme: 'file', language: 'tl' }],
+		documentSelector: [{ scheme: 'file', language: 'teal' }],
 		synchronize: {
 			// Notify the server about file changes to '.tl files contained in the workspace
 			fileEvents: workspace.createFileSystemWatcher('**/*.tl')
