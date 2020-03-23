@@ -17,16 +17,15 @@
     "icon": "assets/teal_logo.png",
     "main": "./out/client/extension",
     "activationEvents": [
-        "onLanguage:tl"
+        "onLanguage:teal"
     ],
     "publisher": "pdesaulniers",
     "contributes": {
         "languages": [
             {
-                "id": "tl",
+                "id": "teal",
                 "aliases": [
                     "Teal",
-                    "TL",
                     "tl"
                 ],
                 "extensions": [
@@ -37,9 +36,9 @@
         ],
         "grammars": [
             {
-                "language": "tl",
-                "scopeName": "source.tl",
-                "path": "./syntaxes/tl.tmLanguage.json"
+                "language": "teal",
+                "scopeName": "source.teal",
+                "path": "./syntaxes/teal.tmLanguage.json"
             }
         ]
     },
