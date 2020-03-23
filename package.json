@@ -43,6 +43,7 @@
         ]
     },
     "dependencies": {
+        "@types/node": "^13.9.3",
         "@types/tmp": "^0.1.0",
         "tmp-promise": "^2.0.2",
         "vscode-languageclient": "^6.1.1",
