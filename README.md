@@ -1,6 +1,6 @@
-# TL for Visual Studio Code
+# Teal for Visual Studio Code
 
-Provides a language server and syntax highlighting for [TL](https://github.com/hishamhm/tl) in VSCode.
+Provides a language server and syntax highlighting for [Teal](https://github.com/teal-language/tl) in VSCode.
 
 ## Features
 
@@ -9,7 +9,7 @@ Provides a language server and syntax highlighting for [TL](https://github.com/h
 
 ## Requirements
 
-Make sure that TL is available in your PATH:
+Make sure that the Teal compiler is available in your PATH:
 ```
 luarocks install tl
 ```
