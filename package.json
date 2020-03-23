@@ -25,9 +25,9 @@
             {
                 "id": "tl",
                 "aliases": [
+                    "Teal",
                     "TL",
-                    "tl",
-                    "Teal"
+                    "tl"
                 ],
                 "extensions": [
                     ".tl"
