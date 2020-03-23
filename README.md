@@ -8,6 +8,7 @@ Provides a language server and syntax highlighting for [Teal](https://github.com
 
 - Syntax highlighting
 - Error checking
+- Snippets
 
 ## Requirements
 

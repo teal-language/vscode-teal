@@ -1,0 +1,70 @@
+{
+	"req": {
+		"prefix": "req",
+		"body": [
+			"local ${1:name} = require(\"${2:module}\")"
+		],
+		"description": "Local require"
+	},
+	"loc": {
+		"prefix": "loc",
+		"body": [
+			"local ${1:name} = ${2:value}"
+		],
+		"description": "Local variable"
+	},
+	"fori": {
+		"prefix": "fori",
+		"body": [
+			"for k, v in ipairs(${1:seq}) do",
+			"\t$0",
+			"end"
+		],
+		"description": "\"ipairs\" loop"
+	},
+	"forp": {
+		"prefix": "forp",
+		"body": [
+			"for k, v in pairs(${1:seq}) do",
+			"\t$0",
+			"end"
+		],
+		"description": "\"pairs\" loop"
+	},
+	"lrec": {
+		"prefix": "lrec",
+		"body": [
+			"local ${1:name} = record",
+			"\t$0",
+			"end"
+		],
+		"description": "Local record definition"
+	},
+	"grec": {
+		"prefix": "grec",
+		"body": [
+			"global ${1:name} = record",
+			"\t$0",
+			"end"
+		],
+		"description": "Global record definition"
+	},
+	"lenum": {
+		"prefix": "lenu",
+		"body": [
+			"local ${1:name} = enum",
+			"\t\"$0\"",
+			"end"
+		],
+		"description": "Local enum definition"
+	},
+	"genum": {
+		"prefix": "genu",
+		"body": [
+			"global ${1:name} = enum",
+			"\t\"$0\"",
+			"end"
+		],
+		"description": "Global enum definition"
+	}
+}
