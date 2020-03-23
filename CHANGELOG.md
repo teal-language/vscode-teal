@@ -1,3 +1,3 @@
-# Change Log
+### 0.1.0 - Mar 23 2020
 
-TODO
+Initial release. The extension supports `tl check` and some basic syntax highlighting.
