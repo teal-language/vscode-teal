@@ -6,7 +6,7 @@
     "license": "MIT",
     "repository": {
         "type": "git",
-        "url": "git://github.com/pdesaulniers/vscode-teal.git"
+        "url": "git://github.com/teal-language/vscode-teal.git"
     },
     "engines": {
         "vscode": "^1.43.0"
