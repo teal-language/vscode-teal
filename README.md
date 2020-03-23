@@ -37,3 +37,7 @@ genu | Global enum definition | global name = enum ... end
 ## Changelog
 
 See [CHANGELOG.md](CHANGELOG.md) for release notes.
+
+## Contributors
+
+Contributions are greatly appreciated! Feel free to fork [this repository](https://github.com/teal-language/vscode-teal) and open a pull request on GitHub.
