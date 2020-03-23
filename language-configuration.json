@@ -66,10 +66,10 @@
         ]
     ],
     "indentationRules": {
-        "increaseIndentPattern": "((\\b(else|function|then|do|repeat)\\b((?!\\b(end|until)\\b).)*)|(\\{\\s*))$",
+        "increaseIndentPattern": "((\\b(else|function|then|do|repeat|record|enum)\\b((?!\\b(end|until)\\b).)*)|(\\{\\s*))$",
         "decreaseIndentPattern": "^\\s*((\\b(elseif|else|end|until)\\b)|(\\})|(\\)))"
     },
-    // Added by vscode-lua
+    // From vscode-lua
     "folding": {
         "markers": {
             "start": "^\\s*--\\s*#?region\\b",

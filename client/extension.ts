@@ -42,13 +42,13 @@ export function activate(context: ExtensionContext) {
 			// Notify the server about file changes to '.tl files contained in the workspace
 			fileEvents: workspace.createFileSystemWatcher('**/*.tl')
 		},
-		outputChannelName: 'TL Language Server'
+		outputChannelName: 'Teal Language Server'
 	};
 
 	// Create the language client and start the client.
 	client = new LanguageClient(
-		'TLLanguageServer',
-		'TL Language Server',
+		'TealLanguageServer',
+		'Teal Language Server',
 		serverOptions,
 		clientOptions
 	);
