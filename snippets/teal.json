@@ -25,7 +25,7 @@
 	"forp": {
 		"prefix": "forp",
 		"body": [
-			"for ${1:k}, ${2:v} in pairs(${3:sequence}) do",
+			"for ${1:k}, ${2:v} in pairs(${3:tbl}) do",
 			"\t$0",
 			"end"
 		],
