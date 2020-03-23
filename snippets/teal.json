@@ -49,7 +49,7 @@
 		],
 		"description": "Global record definition"
 	},
-	"lenum": {
+	"lenu": {
 		"prefix": "lenu",
 		"body": [
 			"local ${1:name} = enum",
@@ -58,7 +58,7 @@
 		],
 		"description": "Local enum definition"
 	},
-	"genum": {
+	"genu": {
 		"prefix": "genu",
 		"body": [
 			"global ${1:name} = enum",

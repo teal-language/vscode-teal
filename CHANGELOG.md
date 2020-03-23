@@ -1,4 +1,4 @@
-### 0.1.3 - Mar 23 2020
+### 0.2.0 - Mar 23 2020
 
 Add some basic snippets.
 
