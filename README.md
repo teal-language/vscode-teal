@@ -1,5 +1,7 @@
 # Teal for Visual Studio Code
 
+![Node.js CI](https://github.com/teal-language/vscode-teal/workflows/Node.js%20CI/badge.svg)
+
 Provides a language server and syntax highlighting for [Teal](https://github.com/teal-language/tl) in Visual Studio Code.
 
 ## Features
