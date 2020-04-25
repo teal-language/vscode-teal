@@ -1,3 +1,7 @@
+### 0.3.0 - Apr 25 2020
+
+Add the root of the workspace to LUA_PATH when running `tl check`.
+
 ### 0.2.0 - Mar 23 2020
 
 Add some basic snippets.
