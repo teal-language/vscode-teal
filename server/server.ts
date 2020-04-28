@@ -144,6 +144,13 @@ documents.onDidChangeContent(change => {
 	validateTextDocument(change.document);
 });
 
+// Monitored files have changed in VS Code
+connection.onDidChangeWatchedFiles(_change => {
+	for (let x of documents.all()) {
+		validateTextDocument(x);
+	}
+});
+
 class TLNotFoundError extends Error { /* ... */ }
 
 async function runTLCheck(filePath: string): Promise<string> {
