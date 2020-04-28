@@ -66,7 +66,7 @@
         ]
     ],
     "indentationRules": {
-        "increaseIndentPattern": "((^\\s*|(local\\s*)|=\\s*)\\b(function)\\b((?!\\b(end)\\b).)*$)|(((\\b(else|then|do|repeat|record|enum)\\b((?!\\b(end|until)\b).)*)|(\\{\\s*))$)",
+        "increaseIndentPattern": "((^\\s*|((local|global)\\s*)|=\\s*)\\b(function)\\b((?!\\b(end)\\b).)*$)|(((\\b(else|then|do|repeat|record|enum)\\b((?!\\b(end|until)\b).)*)|(\\{\\s*))$)",
         "decreaseIndentPattern": "^\\s*((\\b(elseif|else|end|until)\\b)|(\\})|(\\)))",
     },
     // From vscode-lua
