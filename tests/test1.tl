@@ -30,3 +30,7 @@ end
 
 local pt: Point = Point.new(1, 2)
 pt:move(3, 4)
+
+return {
+    dummy = 123
+}
