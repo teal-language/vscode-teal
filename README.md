@@ -34,6 +34,22 @@ grec | Global record definition | global name = record ... end
 lenu | Local enum definition | local name = enum ... end
 genu | Global enum definition | global name = enum ... end
 
+## FAQ
+
+### The module search path is wrong!
+
+By default, this extension runs `tl check` at the root of the workspace.
+
+If your code resides in subdirectories (such as `src/` or `lib/`), you need to add the directories to `tlconfig.lua` at the root of the workspace:
+```lua
+return {
+    include = {
+        "src/",
+        "lib/"
+    }
+}
+```
+
 ## Changelog
 
 See [CHANGELOG.md](CHANGELOG.md) for release notes.
