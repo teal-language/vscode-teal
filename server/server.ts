@@ -30,7 +30,6 @@ import { withFile } from 'tmp-promise'
 const util = require("util");
 const write = util.promisify(require("fs").write);
 const { spawn } = require('child_process');
-var path = require('path');
 
 // Create a connection for the server. The connection uses Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -40,12 +39,8 @@ let hasConfigurationCapability: boolean = false;
 let hasWorkspaceFolderCapability: boolean = false;
 let hasDiagnosticRelatedInformationCapability: boolean = false;
 
-let workspaceRoot: string | null | undefined;
-
 connection.onInitialize((params: InitializeParams) => {
 	let capabilities = params.capabilities;
-
-	workspaceRoot = params.rootPath;
 
 	// Does the client support the `workspace/configuration` request?
 	// If not, we will fall back using global settings
@@ -151,20 +146,8 @@ documents.onDidChangeContent(change => {
 
 class TLNotFoundError extends Error { /* ... */ }
 
-function isNullOrWhitespace(input: string | null | undefined) {
-	return !input || !input.trim();
-}
-
 async function runTLCheck(filePath: string): Promise<string> {
-	var env = Object.create(process.env);
-
-	if (!isNullOrWhitespace(workspaceRoot)) {
-		var luaPath = path.join(workspaceRoot, "?.lua");
-
-		env.LUA_PATH += ";" + luaPath;
-	}
-
-	let child = spawn('tl', ["check", filePath], { env: env });
+	let child = spawn('tl', ["check", filePath]);
 
 	return await new Promise(async function (resolve, reject) {
 		let stdout = "";
