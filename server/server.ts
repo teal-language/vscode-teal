@@ -154,7 +154,14 @@ connection.onDidChangeWatchedFiles(_change => {
 class TLNotFoundError extends Error { /* ... */ }
 
 async function runTLCheck(filePath: string): Promise<string> {
-	let child = spawn('tl', ["check", filePath]);
+	let child: any;
+
+	let platform = process.platform;
+	if (platform == "win32") {
+		child = spawn('cmd.exe', ['/c', 'tl.bat', "check", filePath]);
+	} else {
+		child = spawn('tl', ["check", filePath]);
+	}
 
 	return await new Promise(async function (resolve, reject) {
 		let stdout = "";
