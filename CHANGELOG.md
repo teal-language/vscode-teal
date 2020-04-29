@@ -1,3 +1,9 @@
+### 0.4.0 - Apr 29 2020
+
+- Fix Windows support (thanks Nebulavenus)
+- Automatic indentation fixes
+- Validate all open documents when a TL file changes
+
 ### 0.3.0 - Apr 25 2020
 
 Add the root of the workspace to LUA_PATH when running `tl check`.
