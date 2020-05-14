@@ -1,3 +1,7 @@
+### 0.4.1 - May 13 2020
+
+- The extension will now run `tl check` on .tl files when a plain .lua file is modified. This means that changes to tlconfig.lua are now acknowledged as soon as the file is saved.
+
 ### 0.4.0 - Apr 29 2020
 
 - Fix Windows support (thanks Nebulavenus)
