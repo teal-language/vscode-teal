@@ -40,7 +40,7 @@ export function activate(context: ExtensionContext) {
 		documentSelector: [{ scheme: 'file', language: 'teal' }],
 		synchronize: {
 			// Notify the server about file changes to '.tl files contained in the workspace
-			fileEvents: workspace.createFileSystemWatcher('**/*.tl')
+			fileEvents: workspace.createFileSystemWatcher('**/*.{tl,lua}')
 		},
 		outputChannelName: 'Teal Language Server'
 	};
