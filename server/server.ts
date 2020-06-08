@@ -18,14 +18,22 @@ import {
 	MessageActionItem,
 	ShowMessageRequestParams,
 	MessageType,
-	ShowMessageRequest
+	ShowMessageRequest,
+	VersionedTextDocumentIdentifier,
+	WorkspaceFolder,
+	WorkspaceFoldersRequest,
+	FormattingOptions,
 } from 'vscode-languageserver';
 
 import { TextDocument } from 'vscode-languageserver-textdocument';
 
+import {URI} from 'vscode-uri';
+
 const documents = new TextDocuments(TextDocument);
 
 import { withFile } from 'tmp-promise'
+import path = require('path');
+import { existsSync } from 'fs';
 
 const util = require("util");
 const write = util.promisify(require("fs").write);
@@ -194,6 +202,9 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 
 	let checkResult: string;
 
+	// If someone names their file with this as a prefix they probably don't deserve problem reporting.
+	const tmpBufferPrefix = "__tl__tmp__check-";
+
 	try {
 		checkResult = await withFile(async ({ path, fd }) => {
 			await write(fd, textDocument.getText());
@@ -204,21 +215,48 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 			} catch (error) {
 				throw error;
 			}
-		});
+		}, {prefix: tmpBufferPrefix});
 	} catch (error) {
 		await showErrorMessage(error.message);
 		return;
 	}
 
-	let errorPattern = /^.*:(\d+):(\d+): (.+)$/gm;
+	let errorPattern = /(^.*):(\d+):(\d+): (.+)$/gm;
 
-	let diagnostics: Diagnostic[] = [];
+	let diagnosticsByPath: {[id: string]: Diagnostic[]} = {};
 	let syntaxError: RegExpExecArray | null;
 
+	async function pathInWorkspace(pathToCheck: string):Promise<string|null> {
+
+		if (path.basename(pathToCheck).startsWith(tmpBufferPrefix)) {
+			return textDocument.uri
+		}
+
+		let workspaceFolders = await connection.workspace.getWorkspaceFolders();
+		let resolvedPath :string|null = null;
+		workspaceFolders?.forEach((folder) => {
+			// Surely there is some URI nonsense we can do to append paths?
+			let folderPath = URI.parse(folder.uri).fsPath
+			let fullPath = path.join(folderPath, pathToCheck);
+			if (existsSync(fullPath)) {
+				resolvedPath = URI.file(fullPath).toString()
+				return;
+			}
+		});
+
+		return resolvedPath;
+	}
+
 	while ((syntaxError = errorPattern.exec(checkResult))) {
-		let lineNumber = Number.parseInt(syntaxError[1]) - 1;
-		let columnNumber = Number.parseInt(syntaxError[2]) - 1;
-		let errorMessage = syntaxError[3];
+		let errorPath = path.normalize(syntaxError[1]);
+		let fullPath = await pathInWorkspace(errorPath)
+		if (fullPath === null) {
+			continue;
+		}
+
+		let lineNumber = Number.parseInt(syntaxError[2]) - 1;
+		let columnNumber = Number.parseInt(syntaxError[3]) - 1;
+		let errorMessage = syntaxError[4];
 
 		let range = Range.create(lineNumber, columnNumber, lineNumber, columnNumber);
 
@@ -233,11 +271,19 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 			// TODO?
 		}
 
-		diagnostics.push(diagnostic);
+		let arr = diagnosticsByPath[fullPath];
+		if (arr) {
+			arr.push(diagnostic);
+		} else {
+			diagnosticsByPath[fullPath] = [diagnostic];
+		}
+
 	}
 
 	// Send the computed diagnostics to VSCode.
-	connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
+	for (let [uri, diagnostics] of Object.entries(diagnosticsByPath)) {
+		connection.sendDiagnostics({ uri: uri, diagnostics: diagnostics });
+	}
 }
 
 // This handler provides the initial list of the completion items.
