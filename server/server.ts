@@ -224,10 +224,11 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	let errorPattern = /(^.*):(\d+):(\d+): (.+)$/gm;
 
 	let diagnosticsByPath: {[id: string]: Diagnostic[]} = {};
+	diagnosticsByPath[textDocument.uri] = [];
+
 	let syntaxError: RegExpExecArray | null;
 
 	async function pathInWorkspace(pathToCheck: string):Promise<string|null> {
-
 		if (path.basename(pathToCheck).startsWith(tmpBufferPrefix)) {
 			return textDocument.uri
 		}
@@ -249,7 +250,8 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 
 	while ((syntaxError = errorPattern.exec(checkResult))) {
 		let errorPath = path.normalize(syntaxError[1]);
-		let fullPath = await pathInWorkspace(errorPath)
+		let fullPath = await pathInWorkspace(errorPath);
+
 		if (fullPath === null) {
 			continue;
 		}
