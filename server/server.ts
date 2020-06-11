@@ -27,7 +27,7 @@ import {
 
 import { TextDocument } from 'vscode-languageserver-textdocument';
 
-import {URI} from 'vscode-uri';
+import { URI } from 'vscode-uri';
 
 const documents = new TextDocuments(TextDocument);
 
@@ -215,7 +215,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 			} catch (error) {
 				throw error;
 			}
-		}, {prefix: tmpBufferPrefix});
+		}, { prefix: tmpBufferPrefix });
 	} catch (error) {
 		await showErrorMessage(error.message);
 		return;
@@ -223,18 +223,18 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 
 	let errorPattern = /(^.*):(\d+):(\d+): (.+)$/gm;
 
-	let diagnosticsByPath: {[id: string]: Diagnostic[]} = {};
+	let diagnosticsByPath: { [id: string]: Diagnostic[] } = {};
 	diagnosticsByPath[textDocument.uri] = [];
 
 	let syntaxError: RegExpExecArray | null;
 
-	async function pathInWorkspace(pathToCheck: string):Promise<string|null> {
+	async function pathInWorkspace(pathToCheck: string): Promise<string | null> {
 		if (path.basename(pathToCheck).startsWith(tmpBufferPrefix)) {
 			return textDocument.uri
 		}
 
 		let workspaceFolders = await connection.workspace.getWorkspaceFolders();
-		let resolvedPath :string|null = null;
+		let resolvedPath: string | null = null;
 		workspaceFolders?.forEach((folder) => {
 			// Surely there is some URI nonsense we can do to append paths?
 			let folderPath = URI.parse(folder.uri).fsPath
