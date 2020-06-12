@@ -14,13 +14,166 @@
 	],
 	"repository": {
 		"base": {
-
+			"patterns": [
+				{
+					"include": "#long-comment"
+				},
+				{
+					"include": "#comment"
+				},
+				{
+					"include": "#constant"
+				},
+				{
+					"include": "#number"
+				},
+				{
+					"include": "#string"
+				},
+				{
+					"include": "#long-string"
+				}
+			]
 		},
-		"expression": {
-
+		"comment": {
+			"patterns": [
+				{
+					"name": "comment.teal",
+					"match": "--.*$"
+				}
+			]
 		},
-		"statement": {
-			
-		}
+		"long-comment": {
+			"patterns": [
+				{
+					"begin": "--\\[(=*)\\[",
+					"beginCaptures": {
+						"0": {
+							"name": "punctuation.definition.comment.begin.teal"
+						}
+					},
+					"end": "\\]\\1\\]",
+					"endCaptures": {
+						"0": {
+							"name": "punctuation.definition.comment.end.teal"
+						}
+					},
+					"name": "comment.block.teal"
+				}
+			]
+		},
+		"constant": {
+			"patterns": [
+				{
+					"match": "nil|true|false",
+					"name": "constant.language.teal"
+				}
+			]
+		},
+		"number": {
+			"patterns": [
+				{
+					"match": "(?<![\\w\\d.])0[xX][0-9A-Fa-f]+(?![pPeE.0-9])",
+					"name": "constant.numeric.integer.hexadecimal.teal"
+				},
+				{
+					"match": "(?<![\\w\\d.])0[xX][0-9A-Fa-f]+(\\.[0-9A-Fa-f]+)?([eE]-?\\d*)?([pP][-+]\\d+)?",
+					"name": "constant.numeric.float.hexadecimal.teal"
+				},
+				{
+					"match": "(?<![\\w\\d.])\\d+(?![pPeE.0-9])",
+					"name": "constant.numeric.integer.teal"
+				},
+				{
+					"match": "(?<![\\w\\d.])\\d+(\\.\\d+)?([eE]-?\\d*)?",
+					"name": "constant.numeric.float.teal"
+				}
+			]
+		},
+		"string": {
+			"patterns": [
+				{
+					"begin": "'",
+					"beginCaptures": {
+						"0": {
+							"name": "punctuation.definition.string.begin.teal"
+						}
+					},
+					"end": "'",
+					"endCaptures": {
+						"0": {
+							"name": "punctuation.definition.string.end.teal"
+						}
+					},
+					"name": "string.quoted.single.teal",
+					"patterns": [
+						{
+							"include": "#escaped-char"
+						}
+					]
+				},
+				{
+					"begin": "\"",
+					"beginCaptures": {
+						"0": {
+							"name": "punctuation.definition.string.begin.teal"
+						}
+					},
+					"end": "\"",
+					"endCaptures": {
+						"0": {
+							"name": "punctuation.definition.string.end.teal"
+						}
+					},
+					"name": "string.quoted.double.teal",
+					"patterns": [
+						{
+							"include": "#escaped-char"
+						}
+					]
+				}
+			]
+		},
+		"long-string": {
+			"begin": "\\[(=*)\\[",
+			"beginCaptures": {
+				"0": {
+					"name": "punctuation.definition.string.begin.teal"
+				}
+			},
+			"end": "\\]\\1\\]",
+			"endCaptures": {
+				"0": {
+					"name": "punctuation.definition.string.end.teal"
+				}
+			},
+			"name": "string.multiline.teal"
+		},
+		"escaped-char": {
+			"patterns": [
+				{
+					"match": "\\\\[abfnrtvz\\\\\"'\\n]",
+					"name": "constant.character.escape.teal"
+				},
+				{
+					"match": "\\\\\\d{1,3}",
+					"name": "constant.character.escape.byte.teal"
+				},
+				{
+					"match": "\\\\x[0-9A-Fa-f][0-9A-Fa-f]",
+					"name": "constant.character.escape.byte.teal"
+				},
+				{
+					"match": "\\\\u\\{[0-9A-Fa-f]+\\}",
+					"name": "constant.character.escape.unicode.teal"
+				},
+				{
+					"match": "\\\\.",
+					"name": "invalid.illegal.character.escape.teal"
+				}
+			]
+		},
+		"expression": {},
+		"statement": {}
 	}
 }
