@@ -283,24 +283,51 @@
 			"patterns": [
 				{
 					"begin": "(?<=function)",
-					"end": "(?=\\))",
+					"end": "\\)",
 					"name": "teal.function.signature",
 					"patterns": [
 						{
-							"include": "function-name"
+							"include": "#function-name"
 						},
 						{
-							"include": "function-generic"
+							"include": "#function-generic"
 						},
 						{
-							"include": "function-args"
+							"include": "#function-args"
 						}
 					]
 				}
 			]
 		},
-		"function-name": {},
-		"function-generic": {},
+		"function-name": {
+			"patterns": [
+				{
+					"match": "([a-zA-Z_][a-zA-Z0-9_]*(?:([\\.:])[a-zA-Z_][a-zA-Z0-9_]*)?)",
+					"name": "function.name.teal"
+				}
+			]
+		},
+		"function-generic": {
+			"patterns": [
+				{
+					"begin": "<",
+					"end": ">",
+					"patterns": [
+						{
+							"include": "#type-args"
+						}
+					]
+				}
+			]
+		},
+		"type-args": {
+			"patterns": [
+				{
+					"match": "[a-zA-Z_][a-zA-Z0-9_]*",
+					"name": "type.arg.teal"
+				}
+			]
+		},
 		"function-args": {},
 		"statement": {}
 	}
