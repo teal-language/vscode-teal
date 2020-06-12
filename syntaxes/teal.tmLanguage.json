@@ -3,9 +3,6 @@
 	"scopeName": "source.teal",
 	"patterns": [
 		{
-			"include": "#base"
-		},
-		{
 			"include": "#expression"
 		},
 		{
@@ -173,7 +170,138 @@
 				}
 			]
 		},
-		"expression": {},
+		"expression": {
+			"patterns": [
+				{
+					"include": "#base"
+				},
+				{
+					"include": "#parentheses"
+				},
+				{
+					"include": "#builtin"
+				},
+				{
+					"include": "#brackets"
+				},
+				{
+					"include": "#operator"
+				},
+				{
+					"include": "#function-block"
+				},
+				{
+					"include": "#function-call"
+				},
+				{
+					"include": "#table-constructor"
+				},
+				{
+					"include": "#record-block"
+				},
+				{
+					"include": "#enum-block"
+				},
+				{
+					"include": "#self"
+				},
+				{
+					"include": "#varargs"
+				}
+			]
+		},
+		"parentheses": {
+			"patterns": [
+				{
+					"begin": "\\(",
+					"end": "\\)",
+					"name": "teal.parentheses",
+					"patterns": [
+						{
+							"include": "#expression"
+						}
+					]
+				}
+			]
+		},
+		"builtin": {
+			"patterns": [
+				{
+					"match": "(?<![^.]\\.|:)\\b(assert|collectgarbage|dofile|error|getfenv|getmetatable|ipairs|loadfile|loadstring|module|next|pairs|pcall|print|rawequal|rawget|rawset|require|select|setfenv|setmetatable|tonumber|tostring|type|unpack|xpcall)\\b(?=\\s*(?:[({\"']|\\[\\[))",
+					"name": "support.function.teal"
+				},
+				{
+					"match": "(?<![^.]\\.|:)\\b(coroutine\\.(create|resume|running|status|wrap|yield)|string\\.(byte|char|dump|find|format|gmatch|gsub|len|lower|match|rep|reverse|sub|upper)|table\\.(concat|insert|maxn|remove|sort)|math\\.(abs|acos|asin|atan2?|ceil|cosh?|deg|exp|floor|fmod|frexp|ldexp|log|log10|max|min|modf|pow|rad|random|randomseed|sinh?|sqrt|tanh?)|io\\.(close|flush|input|lines|open|output|popen|read|tmpfile|type|write)|os\\.(clock|date|difftime|execute|exit|getenv|remove|rename|setlocale|time|tmpname)|package\\.(cpath|loaded|loadlib|path|preload|seeall)|debug\\.(debug|[gs]etfenv|[gs]ethook|getinfo|[gs]etlocal|[gs]etmetatable|getregistry|[gs]etupvalue|traceback))\\b(?=\\s*(?:[({\"']|\\[\\[))",
+					"name": "support.function.library.teal"
+				}
+			]
+		},
+		"brackets": {
+			"patterns": [
+				{
+					"begin": "\\[",
+					"end": "\\]",
+					"name": "teal.brackets",
+					"patterns": [
+						{
+							"include": "#expression"
+						}
+					]
+				}
+			]
+		},
+		"operator": {
+			"patterns": [
+				{
+					"match": "\\+|-|%|#|\\*|\\/|\\^|==?|~=|<=?|>=?|(?<!\\.)\\.{2}(?!\\.)",
+					"name": "keyword.operator.teal"
+				},
+				{
+					"match": "\\b(and|or|not|as|is)\\b",
+					"name": "keyword.operator.teal"
+				}
+			]
+		},
+		"function-block": {
+			"patterns": [
+				{
+					"begin": "function",
+					"end": "end",
+					"name": "teal.function.block",
+					"patterns": [
+						{
+							"include": "#function-signature"
+						},
+						{
+							"include": "#statement"
+						}
+					]
+				}
+			]
+		},
+		"function-signature": {
+			"patterns": [
+				{
+					"begin": "(?<=function)",
+					"end": "(?=\\))",
+					"name": "teal.function.signature",
+					"patterns": [
+						{
+							"include": "function-name"
+						},
+						{
+							"include": "function-generic"
+						},
+						{
+							"include": "function-args"
+						}
+					]
+				}
+			]
+		},
+		"function-name": {},
+		"function-generic": {},
+		"function-args": {},
 		"statement": {}
 	}
 }
