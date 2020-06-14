@@ -312,6 +312,7 @@
 				{
 					"begin": "<",
 					"end": ">",
+					"name": "type.arguments.teal",
 					"patterns": [
 						{
 							"include": "#type-args"
@@ -324,11 +325,68 @@
 			"patterns": [
 				{
 					"match": "[a-zA-Z_][a-zA-Z0-9_]*",
-					"name": "type.arg.teal"
+					"name": "support.type.teal"
 				}
 			]
 		},
-		"function-args": {},
+		"function-args": {
+			"patterns": [
+				{
+					"begin": "\\(",
+					"end": "(?=\\))",
+					"name": "function.arguments.teal",
+					"patterns": [
+						{
+							"include": "#function-arg-name"
+						},
+						{
+							"include": "#function-arg-type"
+						}
+					]
+				}
+			]
+		},
+		"function-arg-name": {
+			"patterns": [
+				{
+					"comment": "First argument",
+					"begin": "(?<=\\()",
+					"end": "(?=:|\\))",
+					"name": "function.argument.teal"
+				},
+				{
+					"comment": "Nth argument",
+					"begin": ",",
+					"end": "(?=:|\\))",
+					"name": "function.argument.teal"
+				}
+			]
+		},
+		"function-arg-type": {
+			"patterns": [
+				{
+					"begin": ":",
+					"end": "(?=,|\\))",
+					"patterns": [
+						{
+							"include": "#type-name"
+						}
+					]
+				}
+			]
+		},
+		"type-name": {
+			"patterns": [
+				{
+					"match": "[a-zA-Z_][a-zA-Z0-9_]*",
+					"name": "support.type.teal"
+				},
+				{
+					"match": "\\.",
+					"name": "punctuation.accessor.teal"
+				}
+			]
+		},
 		"statement": {}
 	}
 }
