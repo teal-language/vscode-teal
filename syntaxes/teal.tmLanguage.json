@@ -257,8 +257,12 @@
 					"name": "keyword.operator.teal"
 				},
 				{
-					"match": "\\b(and|or|not|as|is)\\b",
-					"name": "keyword.operator.teal"
+					"match": "\\b(and|or|not)\\b",
+					"name": "keyword.operator.logical.teal"
+				},
+				{
+					"match": "\\b(as|is|in)\\b",
+					"name": "keyword.other.teal"
 				}
 			]
 		},
@@ -267,12 +271,7 @@
 				{
 					"begin": "function",
 					"end": "end",
-					"beginCaptures": {
-						"0": {
-							"name": "keyword.control.teal"
-						}
-					},
-					"endCaptures": {
+					"captures": {
 						"0": {
 							"name": "keyword.control.teal"
 						}
@@ -294,7 +293,7 @@
 				{
 					"begin": "(?<=function)",
 					"end": "\\)",
-					"name": "teal.function.signature",
+					"name": "function.signature.teal",
 					"patterns": [
 						{
 							"include": "#function-name"
@@ -414,19 +413,26 @@
 					"include": "#expression"
 				},
 				{
-					"include": "#if-statement"
+					"include": "#if-block"
+				},
+				{
+					"include": "#do-block"
+				},
+				{
+					"include": "#repeat-block"
+				},
+				{
+					"include": "#while-block"
+				},
+				{
+					"include": "#for-block"
 				}
 			]
 		},
-		"if-statement": {
+		"if-block": {
 			"begin": "if",
 			"end": "end",
-			"beginCaptures": {
-				"0": {
-					"name": "keyword.control.teal"
-				}
-			},
-			"endCaptures": {
+			"captures": {
 				"0": {
 					"name": "keyword.control.teal"
 				}
@@ -451,12 +457,7 @@
 				{
 					"begin": "elseif",
 					"end": "then",
-					"beginCaptures": {
-						"0": {
-							"name": "keyword.control.teal"
-						}
-					},
-					"endCaptures": {
+					"captures": {
 						"0": {
 							"name": "keyword.control.teal"
 						}
@@ -476,6 +477,89 @@
 						}
 					},
 					"name": "statement.else.teal"
+				},
+				{
+					"include": "#statement"
+				}
+			]
+		},
+		"do-block": {
+			"begin": "do",
+			"end": "end",
+			"captures": {
+				"0": {
+					"name": "keyword.control.teal"
+				}
+			},
+			"name": "statement.do-block.teal",
+			"patterns": [
+				{
+					"include": "#statement"
+				}
+			]
+		},
+		"repeat-block": {
+			"begin": "repeat",
+			"end": "until",
+			"captures": {
+				"0": {
+					"name": "keyword.control.teal"
+				}
+			},
+			"name": "statement.repeat-block.teal",
+			"patterns": [
+				{
+					"include": "#statement"
+				}
+			]
+		},
+		"while-block": {
+			"begin": "while",
+			"end": "end",
+			"captures": {
+				"0": {
+					"name": "keyword.control.teal"
+				}
+			},
+			"name": "statement.while-block.teal",
+			"patterns": [
+				{
+					"begin": "(?<=while)",
+					"end": "do",
+					"endCaptures": {
+						"0": {
+							"name": "keyword.control.teal"
+						}
+					}
+				},
+				{
+					"include": "#statement"
+				}
+			]
+		},
+		"for-block": {
+			"begin": "for",
+			"end": "end",
+			"captures": {
+				"0": {
+					"name": "keyword.control.teal"
+				}
+			},
+			"name": "statement.for-block.teal",
+			"patterns": [
+				{
+					"begin": "(?<=for)",
+					"end": "do",
+					"endCaptures": {
+						"0": {
+							"name": "keyword.control.teal"
+						}
+					},
+					"patterns": [
+						{
+							"include": "#expression"
+						}
+					]
 				},
 				{
 					"include": "#statement"
