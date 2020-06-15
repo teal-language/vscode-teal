@@ -267,6 +267,16 @@
 				{
 					"begin": "function",
 					"end": "end",
+					"beginCaptures": {
+						"0": {
+							"name": "keyword.control.teal"
+						}
+					},
+					"endCaptures": {
+						"0": {
+							"name": "keyword.control.teal"
+						}
+					},
 					"name": "teal.function.block",
 					"patterns": [
 						{
@@ -290,7 +300,7 @@
 							"include": "#function-name"
 						},
 						{
-							"include": "#function-generic"
+							"include": "#generics"
 						},
 						{
 							"include": "#function-args"
@@ -307,7 +317,7 @@
 				}
 			]
 		},
-		"function-generic": {
+		"generics": {
 			"patterns": [
 				{
 					"begin": "<",
@@ -315,13 +325,13 @@
 					"name": "type.arguments.teal",
 					"patterns": [
 						{
-							"include": "#type-args"
+							"include": "#type-arg"
 						}
 					]
 				}
 			]
 		},
-		"type-args": {
+		"type-arg": {
 			"patterns": [
 				{
 					"match": "[a-zA-Z_][a-zA-Z0-9_]*",
@@ -370,6 +380,9 @@
 					"patterns": [
 						{
 							"include": "#type-name"
+						},
+						{
+							"include": "#generics"
 						}
 					]
 				}
@@ -387,6 +400,87 @@
 				}
 			]
 		},
-		"statement": {}
+		"function-call": {
+			"patterns": [
+				{
+					"match": "\\b([a-zA-Z_][a-zA-Z0-9_]*)\\b(?=\\s*(?:[({\"']|\\[\\[))",
+					"name": "support.function.any-method.teal"
+				}
+			]
+		},
+		"statement": {
+			"patterns": [
+				{
+					"include": "#expression"
+				},
+				{
+					"include": "#if-statement"
+				}
+			]
+		},
+		"if-statement": {
+			"begin": "if",
+			"end": "end",
+			"beginCaptures": {
+				"0": {
+					"name": "keyword.control.teal"
+				}
+			},
+			"endCaptures": {
+				"0": {
+					"name": "keyword.control.teal"
+				}
+			},
+			"name": "statement.if-block.teal",
+			"patterns": [
+				{
+					"begin": "(?<=if)",
+					"end": "then",
+					"endCaptures": {
+						"0": {
+							"name": "keyword.control.teal"
+						}
+					},
+					"name": "statement.if.teal",
+					"patterns": [
+						{
+							"include": "#expression"
+						}
+					]
+				},
+				{
+					"begin": "elseif",
+					"end": "then",
+					"beginCaptures": {
+						"0": {
+							"name": "keyword.control.teal"
+						}
+					},
+					"endCaptures": {
+						"0": {
+							"name": "keyword.control.teal"
+						}
+					},
+					"name": "statement.elseif.teal",
+					"patterns": [
+						{
+							"include": "#expression"
+						}
+					]
+				},
+				{
+					"match": "else",
+					"captures": {
+						"0": {
+							"name": "keyword.control.teal"
+						}
+					},
+					"name": "statement.else.teal"
+				},
+				{
+					"include": "#statement"
+				}
+			]
+		}
 	}
 }
