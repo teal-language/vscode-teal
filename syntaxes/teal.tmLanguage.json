@@ -235,7 +235,7 @@
 			"name": "constant.other.placeholder.teal"
 		},
 		{
-			"match": "\\b(break|do|else|for|if|elseif|goto|return|then|repeat|while|until|end|function|local|in|record|global|enum)\\b",
+			"match": "\\b(break|do|else|for|if|elseif|goto|return|then|repeat|while|until|end|function|local|in|record|global|enum|type)\\b",
 			"name": "keyword.control.teal"
 		},
 		{

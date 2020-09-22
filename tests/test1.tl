@@ -1,9 +1,9 @@
-local Point = record
+local record Point
     x: number
     y: number
 end
 
-global Direction = enum
+global type Direction = enum
     "north"
     "south"
     "east"
