@@ -1,3 +1,7 @@
+### 0.4.3 - September 22 2020
+
+- Add support for tl v0.8.0
+
 ### 0.4.2 - June 30 2020
 
 - Diagnostics should now be correctly associated with the file that produced the error (thanks factubsio) 
