@@ -1,6 +1,6 @@
 ### 0.4.3 - September 22 2020
 
-- Add support for Teal v0.8.0
+- Add support for tl v0.8.0
 
 ### 0.4.2 - June 30 2020
 
