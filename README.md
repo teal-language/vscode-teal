@@ -43,7 +43,7 @@ By default, this extension runs `tl check` at the root of the workspace.
 If your code resides in subdirectories (such as `src/` or `lib/`), you need to add the directories to `tlconfig.lua` at the root of the workspace:
 ```lua
 return {
-    include = {
+    include_dir = {
         "src/",
         "lib/"
     }
