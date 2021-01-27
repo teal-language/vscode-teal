@@ -26,18 +26,16 @@ import {
 } from 'vscode-languageserver';
 
 import { TextDocument } from 'vscode-languageserver-textdocument';
-
 import { URI } from 'vscode-uri';
-
-const documents = new TextDocuments(TextDocument);
-
 import { withFile } from 'tmp-promise'
 import path = require('path');
 import { existsSync } from 'fs';
+import util = require("util");
+import { spawn } from 'child_process';
 
-const util = require("util");
 const write = util.promisify(require("fs").write);
-const { spawn } = require('child_process');
+
+const documents = new TextDocuments(TextDocument);
 
 // Create a connection for the server. The connection uses Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -90,13 +88,22 @@ connection.onInitialized(() => {
 });
 
 interface TealServerSettings {
-
-}
+	compilerPath: {
+		unix: string,
+		windows: string
+	}
+};
 
 // The global settings, used when the `workspace/configuration` request is not supported by the client.
 // Please note that this is not the case when using this server with the client provided in this example
 // but could happen with other clients.
-const defaultSettings: TealServerSettings = {};
+const defaultSettings: TealServerSettings = {
+	compilerPath: {
+		unix: "tl",
+		windows: "tl.bat"
+	}
+};
+
 let globalSettings: TealServerSettings = defaultSettings;
 
 // Cache the settings of all open documents
@@ -108,7 +115,7 @@ connection.onDidChangeConfiguration(change => {
 		documentSettings.clear();
 	} else {
 		globalSettings = <TealServerSettings>(
-			(change.settings.languageServerExample || defaultSettings)
+			(change.settings.teal || defaultSettings)
 		);
 	}
 
@@ -126,7 +133,7 @@ function getDocumentSettings(resource: string): Thenable<TealServerSettings> {
 	if (!result) {
 		result = connection.workspace.getConfiguration({
 			scopeUri: resource,
-			section: 'languageServerExample'
+			section: 'teal'
 		});
 
 		documentSettings.set(resource, result);
@@ -161,14 +168,33 @@ connection.onDidChangeWatchedFiles(_change => {
 
 class TLNotFoundError extends Error { /* ... */ }
 
-async function runTLCheck(filePath: string): Promise<string> {
+function getDefaultCompilerPath() {
+	if (process.platform === "win32") {
+		return defaultSettings.compilerPath.windows;
+	} else {
+		return defaultSettings.compilerPath.unix;
+	}
+}
+
+function getCompilerPath(settings: TealServerSettings) {
+	if (process.platform === "win32") {
+		return settings.compilerPath.windows;
+	} else {
+		return settings.compilerPath.unix;
+	}
+}
+
+async function runTLCheck(filePath: string, settings: TealServerSettings): Promise<string> {
 	let child: any;
 
 	let platform = process.platform;
+
+	const compilerPath = getCompilerPath(settings);
+
 	if (platform == "win32") {
-		child = spawn('cmd.exe', ['/c', 'tl.bat', "check", filePath]);
+		child = spawn('cmd.exe', ['/c', compilerPath, "check", filePath]);
 	} else {
-		child = spawn('tl', ["check", filePath]);
+		child = spawn(compilerPath, ["check", filePath]);
 	}
 
 	return await new Promise(async function (resolve, reject) {
@@ -177,7 +203,15 @@ async function runTLCheck(filePath: string): Promise<string> {
 
 		child.on('error', function (error: any) {
 			if (error.code === 'ENOENT') {
-				reject(new TLNotFoundError("Could not find the tl executable. Please make sure that it is available in the PATH."));
+				let errorMessage = "Could not find the tl executable. Please make sure that it is available in the PATH, or set the \"Teal > Compiler Path\" setting to the correct value.";
+
+				const compilerPathIsCustom = compilerPath !== getDefaultCompilerPath();
+
+				if (compilerPathIsCustom) {
+					errorMessage = "Could not find the tl executable. Please make sure that the \"Teal > Compiler Path\" setting is correct.";
+				}
+
+				reject(new TLNotFoundError(errorMessage));
 			} else {
 				reject(error);
 			}
@@ -202,7 +236,6 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 
 	let checkResult: string;
 
-	// If someone names their file with this as a prefix they probably don't deserve problem reporting.
 	const tmpBufferPrefix = "__tl__tmp__check-";
 
 	try {
@@ -210,7 +243,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 			await write(fd, textDocument.getText());
 
 			try {
-				let result = await runTLCheck(path);
+				let result = await runTLCheck(path, settings);
 				return result;
 			} catch (error) {
 				throw error;
@@ -235,10 +268,11 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 
 		let workspaceFolders = await connection.workspace.getWorkspaceFolders();
 		let resolvedPath: string | null = null;
+
 		workspaceFolders?.forEach((folder) => {
-			// Surely there is some URI nonsense we can do to append paths?
 			let folderPath = URI.parse(folder.uri).fsPath
 			let fullPath = path.join(folderPath, pathToCheck);
+
 			if (existsSync(fullPath)) {
 				resolvedPath = URI.file(fullPath).toString()
 				return;
@@ -274,12 +308,12 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 		}
 
 		let arr = diagnosticsByPath[fullPath];
+		
 		if (arr) {
 			arr.push(diagnostic);
 		} else {
 			diagnosticsByPath[fullPath] = [diagnostic];
 		}
-
 	}
 
 	// Send the computed diagnostics to VSCode.

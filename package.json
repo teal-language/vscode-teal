@@ -6,7 +6,7 @@
     "license": "MIT",
     "repository": {
         "type": "git",
-        "url": "git://github.com/teal-language/vscode-teal.git"
+        "url": "https://github.com/teal-language/vscode-teal.git"
     },
     "engines": {
         "vscode": "^1.46.0"
@@ -21,6 +21,21 @@
     ],
     "publisher": "pdesaulniers",
     "contributes": {
+        "configuration": {
+            "title": "Teal",
+            "properties": {
+                "teal.compilerPath.unix": {
+                    "type": "string",
+                    "default": "tl",
+                    "description": "The path of the tl compiler on Unix-like platforms."
+                },
+                "teal.compilerPath.window": {
+                    "type": "string",
+                    "default": "tl.bat",
+                    "description": "The path of the tl compiler on Windows."
+                }
+            }
+        },
         "languages": [
             {
                 "id": "teal",
