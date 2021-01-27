@@ -293,7 +293,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 		}
 
 		let lineNumber = Number.parseInt(groups.lineNumber) - 1;
-		let columnNumber = 0;
+		let columnNumber = Number.MAX_VALUE;
 
 		if (groups.columnNumber !== undefined) {
 			columnNumber = Number.parseInt(groups.columnNumber) - 1
