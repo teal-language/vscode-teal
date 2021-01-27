@@ -37,9 +37,12 @@ export function activate(context: ExtensionContext) {
 	// Options to control the language client
 	let clientOptions: LanguageClientOptions = {
 		// Register the server for .tl files
-		documentSelector: [{ scheme: 'file', language: 'teal' }],
+		documentSelector: [
+			{ scheme: 'file', language: 'teal' },
+			{ scheme: 'file', language: 'lua', pattern: '**/tlconfig.lua' }
+		],
 		synchronize: {
-			// Notify the server about file changes to '.tl files contained in the workspace
+			// Notify the server about file changes to .tl and .lua files contained in the workspace
 			fileEvents: workspace.createFileSystemWatcher('**/*.{tl,lua}')
 		},
 		outputChannelName: 'Teal Language Server'

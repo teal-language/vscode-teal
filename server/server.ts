@@ -254,7 +254,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 		return;
 	}
 
-	let errorPattern = /(^.*?):(\d+):(\d+): (.+)$/gm;
+	let errorPattern = /(?<fileName>^.*?):(?<lineNumber>\d+):((?<columnNumber>\d+):)? (?<errorMessage>.+)$/gm;
 
 	let diagnosticsByPath: { [id: string]: Diagnostic[] } = {};
 	diagnosticsByPath[textDocument.uri] = [];
@@ -282,17 +282,24 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 		return resolvedPath;
 	}
 
-	while ((syntaxError = errorPattern.exec(checkResult))) {
-		let errorPath = path.normalize(syntaxError[1]);
+	while ((syntaxError = errorPattern.exec(checkResult))) {		
+		const groups = syntaxError.groups!;
+
+		let errorPath = path.normalize(groups.fileName);
 		let fullPath = await pathInWorkspace(errorPath);
 
 		if (fullPath === null) {
 			continue;
 		}
 
-		let lineNumber = Number.parseInt(syntaxError[2]) - 1;
-		let columnNumber = Number.parseInt(syntaxError[3]) - 1;
-		let errorMessage = syntaxError[4];
+		let lineNumber = Number.parseInt(groups.lineNumber) - 1;
+		let columnNumber = 0;
+
+		if (groups.columnNumber !== undefined) {
+			columnNumber = Number.parseInt(groups.columnNumber) - 1
+		}
+
+		let errorMessage = groups.errorMessage;
 
 		let range = Range.create(lineNumber, columnNumber, lineNumber, columnNumber);
 
