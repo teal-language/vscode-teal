@@ -254,7 +254,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 		return;
 	}
 
-	let errorPattern = /(^.*):(\d+):(\d+): (.+)$/gm;
+	let errorPattern = /(^.*?):(\d+):(\d+): (.+)$/gm;
 
 	let diagnosticsByPath: { [id: string]: Diagnostic[] } = {};
 	diagnosticsByPath[textDocument.uri] = [];
@@ -308,7 +308,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 		}
 
 		let arr = diagnosticsByPath[fullPath];
-		
+
 		if (arr) {
 			arr.push(diagnostic);
 		} else {
