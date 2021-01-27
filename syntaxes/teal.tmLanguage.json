@@ -378,10 +378,35 @@
 					"end": "(?=,|\\))",
 					"patterns": [
 						{
-							"include": "#type-name"
-						},
+							"include": "#type"
+						}
+					]
+				}
+			]
+		},
+		"type": {
+			"name": "support.type.teal",
+			"patterns": [
+				{
+					"include": "#table-type"
+				},
+				{
+					"include": "#type-name"
+				},
+				{
+					"include": "#generics"
+				}
+			]
+		},
+		"table-type": {
+			"name": "support.tabletype.teal",
+			"patterns": [
+				{
+					"begin": "{",
+					"end": "}",
+					"patterns": [
 						{
-							"include": "#generics"
+							"include": "#type"
 						}
 					]
 				}
