@@ -258,7 +258,7 @@
 					"end": "end",
 					"captures": {
 						"0": {
-							"name": "keyword.control.teal"
+							"name": "keyword.declaration.function.teal"
 						}
 					},
 					"name": "teal.function.block",
@@ -395,7 +395,7 @@
 					"end": "\\)",
 					"beginCaptures": {
 						"0": {
-							"name": "keyword.control.teal"
+							"name": "keyword.declaration.function.teal"
 						}
 					},
 					"patterns": [
@@ -477,7 +477,7 @@
 			"end": "end",
 			"captures": {
 				"0": {
-					"name": "keyword.control.teal"
+					"name": "keyword.declaration.record.teal"
 				}
 			},
 			"name": "statement.record-block.teal",
@@ -524,10 +524,9 @@
 			"end": "end",
 			"captures": {
 				"0": {
-					"name": "keyword.control.teal"
+					"name": "keyword.declaration.enum.teal"
 				}
 			},
-			"name": "statement.enum-block.teal",
 			"patterns": [
 				{
 					"include": "#string"
