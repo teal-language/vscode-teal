@@ -69,7 +69,7 @@
 		"constant": {
 			"patterns": [
 				{
-					"match": "nil|true|false",
+					"match": "\\b(nil|true|false)\\b",
 					"name": "constant.language.teal"
 				}
 			]
@@ -210,7 +210,7 @@
 					"include": "#self"
 				},
 				{
-					"include": "#varargs"
+					"include": "#field-access"
 				}
 			]
 		},
@@ -480,8 +480,8 @@
 			]
 		},
 		"record-block": {
-			"begin": "record",
-			"end": "end",
+			"begin": "\\brecord\\b",
+			"end": "\\bend\\b",
 			"captures": {
 				"0": {
 					"name": "storage.type.record.teal"
@@ -489,6 +489,9 @@
 			},
 			"name": "statement.record-block.teal",
 			"patterns": [
+				{
+					"include": "#comment"
+				},
 				{
 					"include": "#enum-block"
 				},
@@ -527,14 +530,17 @@
 			]
 		},
 		"enum-block": {
-			"begin": "enum",
-			"end": "end",
+			"begin": "\\benum\\b",
+			"end": "\\bend\\b",
 			"captures": {
 				"0": {
 					"name": "storage.type.enum.teal"
 				}
 			},
 			"patterns": [
+				{
+					"include": "#comment"
+				},
 				{
 					"include": "#string"
 				},
@@ -543,6 +549,14 @@
 					"name": "support.type.teal"
 				}
 			]
+		},
+		"self": {
+			"match": "(?<![^.]\\.|:)\\b(self)\\b",
+			"name": "variable.language.self.teal"
+		},
+		"field-access": {
+			"match": "(?<=[^.]\\.|:)\\b([a-zA-Z_][a-zA-Z0-9_]*)",
+			"name": "variable.other.teal"
 		},
 		"statement": {
 			"patterns": [
@@ -666,8 +680,8 @@
 			]
 		},
 		"while-block": {
-			"begin": "while",
-			"end": "end",
+			"begin": "\\bwhile\\b",
+			"end": "\\bend\\b",
 			"captures": {
 				"0": {
 					"name": "keyword.control.teal"
@@ -677,7 +691,7 @@
 			"patterns": [
 				{
 					"begin": "(?<=while)",
-					"end": "do",
+					"end": "\\bdo\\b",
 					"endCaptures": {
 						"0": {
 							"name": "keyword.control.teal"
