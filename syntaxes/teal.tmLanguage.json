@@ -192,6 +192,9 @@
 					"include": "#operator"
 				},
 				{
+					"include": "#builtin-function"
+				},
+				{
 					"include": "#function-block"
 				},
 				{
@@ -255,6 +258,18 @@
 				{
 					"match": "\\b(as|is|in)\\b",
 					"name": "keyword.other.teal"
+				}
+			]
+		},
+		"builtin-function": {
+			"patterns": [
+				{
+					"match": "(?<![^.]\\.|:)\\b(assert|collectgarbage|dofile|error|getfenv|getmetatable|ipairs|loadfile|loadstring|module|next|pairs|pcall|print|rawequal|rawget|rawset|require|select|setfenv|setmetatable|tonumber|tostring|type|unpack|xpcall)\\b(?=\\s*(?:[({\"']|\\[\\[))",
+					"name": "support.function.teal"
+				},
+				{
+					"match": "(?<![^.]\\.|:)\\b(coroutine\\.(create|resume|running|status|wrap|yield)|string\\.(byte|char|dump|find|format|gmatch|gsub|len|lower|match|rep|reverse|sub|upper)|table\\.(concat|insert|maxn|remove|sort)|math\\.(abs|acos|asin|atan2?|ceil|cosh?|deg|exp|floor|fmod|frexp|ldexp|log|log10|max|min|modf|pow|rad|random|randomseed|sinh?|sqrt|tanh?)|io\\.(close|flush|input|lines|open|output|popen|read|tmpfile|type|write)|os\\.(clock|date|difftime|execute|exit|getenv|remove|rename|setlocale|time|tmpname)|package\\.(cpath|loaded|loadlib|path|preload|seeall)|debug\\.(debug|[gs]etfenv|[gs]ethook|getinfo|[gs]etlocal|[gs]etmetatable|getregistry|[gs]etupvalue|traceback))\\b(?=\\s*(?:[({\"']|\\[\\[))",
+					"name": "support.function.library.teal"
 				}
 			]
 		},
@@ -592,6 +607,9 @@
 				},
 				{
 					"include": "#scope-modifier"
+				},
+				{
+					"include": "#new-type-declaration"
 				}
 			]
 		},
