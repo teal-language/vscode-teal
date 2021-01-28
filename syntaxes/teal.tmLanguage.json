@@ -375,6 +375,9 @@
 		"type": {
 			"patterns": [
 				{
+					"include": "#function-type"
+				},
+				{
 					"include": "#table-type"
 				},
 				{
@@ -382,6 +385,24 @@
 				},
 				{
 					"include": "#generics"
+				}
+			]
+		},
+		"function-type": {
+			"patterns": [
+				{
+					"begin": "function",
+					"end": "\\)",
+					"beginCaptures": {
+						"0": {
+							"name": "keyword.control.teal"
+						}
+					},
+					"patterns": [
+						{
+							"include": "#type"
+						}
+					]
 				}
 			]
 		},
