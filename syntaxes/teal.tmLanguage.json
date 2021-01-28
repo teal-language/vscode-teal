@@ -13,9 +13,6 @@
 		"base": {
 			"patterns": [
 				{
-					"include": "#long-comment"
-				},
-				{
 					"include": "#comment"
 				},
 				{
@@ -35,8 +32,10 @@
 		"comment": {
 			"patterns": [
 				{
-					"name": "comment.teal",
-					"match": "--.*$"
+					"include": "#long-comment"
+				},
+				{
+					"include": "#short-comment"
 				}
 			]
 		},
@@ -56,6 +55,14 @@
 						}
 					},
 					"name": "comment.block.teal"
+				}
+			]
+		},
+		"short-comment": {
+			"patterns": [
+				{
+					"name": "comment.teal",
+					"match": "--.*$"
 				}
 			]
 		},
@@ -477,7 +484,7 @@
 			"end": "end",
 			"captures": {
 				"0": {
-					"name": "keyword.declaration.record.teal"
+					"name": "storage.type.record.teal"
 				}
 			},
 			"name": "statement.record-block.teal",
@@ -509,7 +516,7 @@
 			"end": "=",
 			"beginCaptures": {
 				"1": {
-					"name": "keyword.other.teal"
+					"name": "keyword.declaration.type.teal"
 				}
 			},
 			"patterns": [
@@ -524,7 +531,7 @@
 			"end": "end",
 			"captures": {
 				"0": {
-					"name": "keyword.declaration.enum.teal"
+					"name": "storage.type.enum.teal"
 				}
 			},
 			"patterns": [
@@ -556,6 +563,21 @@
 				},
 				{
 					"include": "#for-block"
+				},
+				{
+					"include": "#goto"
+				},
+				{
+					"include": "#label"
+				},
+				{
+					"include": "#break"
+				},
+				{
+					"include": "#return"
+				},
+				{
+					"include": "#scope-modifier"
 				}
 			]
 		},
@@ -695,6 +717,26 @@
 					"include": "#statement"
 				}
 			]
+		},
+		"goto": {
+			"match": "\\b(goto)\\b",
+			"name": "keyword.control.teal"
+		},
+		"label": {
+			"match": "::([a-zA-Z_][a-zA-Z0-9_]*)::",
+			"name": "entity.name.label.teal"
+		},
+		"break": {
+			"match": "\\b(break)\\b",
+			"name": "keyword.control.teal"
+		},
+		"return": {
+			"match": "\\b(return)\\b",
+			"name": "keyword.control.teal"
+		},
+		"scope-modifier": {
+			"match": "\\b(local|global)\\b",
+			"name": "storage.modifier.teal"
 		}
 	}
 }
