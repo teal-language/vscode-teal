@@ -531,7 +531,7 @@
 		},
 		"new-type-declaration": {
 			"begin": "\\b(type)\\b",
-			"end": "=",
+			"end": "$",
 			"beginCaptures": {
 				"1": {
 					"name": "keyword.declaration.type.teal"
@@ -539,8 +539,28 @@
 			},
 			"patterns": [
 				{
-					"match": "[a-zA-Z_][a-zA-Z0-9_]*",
-					"name": "support.type.teal"
+					"begin": "[a-zA-Z_][a-zA-Z0-9_]*",
+					"end": "=",
+					"beginCaptures": {
+						"0": {
+							"name": "support.type.teal"
+						}
+					}
+				},
+				{
+					"begin": "(?<==)",
+					"end": "$",
+					"patterns": [
+						{
+							"include": "#record-block"
+						},
+						{
+							"include": "#enum-block"
+						},
+						{
+							"include": "#type"
+						}
+					]
 				}
 			]
 		},
