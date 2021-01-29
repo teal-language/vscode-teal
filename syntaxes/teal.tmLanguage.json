@@ -544,6 +544,14 @@
 					"include": "#new-type-declaration"
 				},
 				{
+					"match": "^\\s*\\buserdata\\b",
+					"name": "storage.type.userdata.teal"
+				},
+				{
+					"match": "^\\s*\\bmetamethod\\b",
+					"name": "storage.type.metamethod.teal"
+				},
+				{
 					"match": "^\\s*([a-zA-Z_][a-zA-Z0-9_]*)\\s*:",
 					"captures": {
 						"1": {
