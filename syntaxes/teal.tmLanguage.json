@@ -276,7 +276,7 @@
 		"function-block": {
 			"patterns": [
 				{
-					"begin": "(?=\\bfunction\\b)",
+					"begin": "\\bfunction\\b",
 					"end": "\\bend\\b",
 					"captures": {
 						"0": {
@@ -298,14 +298,9 @@
 		"function-signature": {
 			"patterns": [
 				{
-					"begin": "\\bfunction\\b",
+					"begin": "(?<=\\bfunction\\b)",
 					"end": "\\)",
 					"name": "function.signature.teal",
-					"beginCaptures": {
-						"0": {
-							"name": "keyword.declaration.function.teal"
-						}
-					},
 					"patterns": [
 						{
 							"include": "#comment"
