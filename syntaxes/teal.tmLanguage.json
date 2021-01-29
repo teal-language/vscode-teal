@@ -800,6 +800,15 @@
 		"scope-modifier": {
 			"match": "\\b(local|global)\\b",
 			"name": "storage.modifier.teal"
+		},
+		"type-annotation": {
+			"begin": ":",
+			"end": "=|$",
+			"patterns": [
+				{
+					"include": "#type"
+				}
+			]
 		}
 	}
 }
