@@ -802,8 +802,9 @@
 			"name": "storage.modifier.teal"
 		},
 		"type-annotation": {
-			"begin": ":",
-			"end": "=|$",
+			"comment": "Matches type annotations which have not been matched by other rules. Avoids matching method calls. Makes sure that function types are not interpreted as method calls.",
+			"begin": ":(?:(?!(\\s*\\b((?!function)[a-zA-Z_][a-zA-Z0-9_]*)\\b(?=\\s*([({\"']|\\[\\[)))))",
+			"end": "=|;|$",
 			"patterns": [
 				{
 					"include": "#type"
