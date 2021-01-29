@@ -656,19 +656,11 @@
 			"name": "statement.if-block.teal",
 			"patterns": [
 				{
-					"begin": "(?<=\\bif\\b)",
-					"end": "\\bthen\\b",
-					"endCaptures": {
-						"0": {
-							"name": "keyword.control.teal"
-						}
-					},
-					"name": "statement.if.teal",
-					"patterns": [
-						{
-							"include": "#expression"
-						}
-					]
+					"include": "#expression"
+				},
+				{
+					"match": "\\bthen\\b",
+					"name": "keyword.control.if-then.teal"
 				},
 				{
 					"begin": "\\belseif\\b",
@@ -687,12 +679,7 @@
 				},
 				{
 					"match": "\\belse\\b",
-					"captures": {
-						"0": {
-							"name": "keyword.control.teal"
-						}
-					},
-					"name": "statement.else.teal"
+					"name": "keyword.control.else.teal"
 				},
 				{
 					"include": "#statement"
