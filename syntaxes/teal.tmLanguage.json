@@ -276,8 +276,8 @@
 		"function-block": {
 			"patterns": [
 				{
-					"begin": "function",
-					"end": "end",
+					"begin": "\\bfunction\\b",
+					"end": "\\bend\\b",
 					"captures": {
 						"0": {
 							"name": "keyword.declaration.function.teal"
@@ -289,9 +289,6 @@
 							"include": "#function-signature"
 						},
 						{
-							"include": "#function-return-type"
-						},
-						{
 							"include": "#statement"
 						}
 					]
@@ -301,7 +298,7 @@
 		"function-signature": {
 			"patterns": [
 				{
-					"begin": "(?<=function)",
+					"begin": "(?<=\\bfunction\\b)",
 					"end": "\\)",
 					"name": "function.signature.teal",
 					"patterns": [
@@ -629,13 +626,16 @@
 					"include": "#scope-modifier"
 				},
 				{
+					"include": "#type-annotation"
+				},
+				{
 					"include": "#new-type-declaration"
 				}
 			]
 		},
 		"if-block": {
-			"begin": "if",
-			"end": "end",
+			"begin": "\\bif\\b",
+			"end": "\\bend\\b",
 			"captures": {
 				"0": {
 					"name": "keyword.control.teal"
@@ -644,8 +644,8 @@
 			"name": "statement.if-block.teal",
 			"patterns": [
 				{
-					"begin": "(?<=if)",
-					"end": "then",
+					"begin": "(?<=\\bif\\b)",
+					"end": "\\bthen\\b",
 					"endCaptures": {
 						"0": {
 							"name": "keyword.control.teal"
@@ -659,8 +659,8 @@
 					]
 				},
 				{
-					"begin": "elseif",
-					"end": "then",
+					"begin": "\\belseif\\b",
+					"end": "\\bthen\\b",
 					"captures": {
 						"0": {
 							"name": "keyword.control.teal"
@@ -674,7 +674,7 @@
 					]
 				},
 				{
-					"match": "else",
+					"match": "\\belse\\b",
 					"captures": {
 						"0": {
 							"name": "keyword.control.teal"
@@ -688,8 +688,8 @@
 			]
 		},
 		"do-block": {
-			"begin": "do",
-			"end": "end",
+			"begin": "\\bdo\\b",
+			"end": "\\bend\\b",
 			"captures": {
 				"0": {
 					"name": "keyword.control.teal"
@@ -703,8 +703,8 @@
 			]
 		},
 		"repeat-block": {
-			"begin": "repeat",
-			"end": "until",
+			"begin": "\\brepeat\\b",
+			"end": "\\buntil\\b",
 			"captures": {
 				"0": {
 					"name": "keyword.control.teal"
@@ -728,13 +728,18 @@
 			"name": "statement.while-block.teal",
 			"patterns": [
 				{
-					"begin": "(?<=while)",
+					"begin": "(?<=\\bwhile\\b)",
 					"end": "\\bdo\\b",
 					"endCaptures": {
 						"0": {
 							"name": "keyword.control.teal"
 						}
-					}
+					},
+					"patterns": [
+						{
+							"include": "#expression"
+						}
+					]
 				},
 				{
 					"include": "#statement"
@@ -742,8 +747,8 @@
 			]
 		},
 		"for-block": {
-			"begin": "for",
-			"end": "end",
+			"begin": "\\bfor\\b",
+			"end": "\\bend\\b",
 			"captures": {
 				"0": {
 					"name": "keyword.control.teal"
@@ -752,8 +757,8 @@
 			"name": "statement.for-block.teal",
 			"patterns": [
 				{
-					"begin": "(?<=for)",
-					"end": "do",
+					"begin": "(?<=\\bfor\\b)",
+					"end": "\\bdo\\b",
 					"endCaptures": {
 						"0": {
 							"name": "keyword.control.teal"
