@@ -1,3 +1,11 @@
+### 0.4.3 - September 22 2020
+
+- Add support for tl v0.8.0
+
+### 0.4.2 - June 30 2020
+
+- Diagnostics should now be correctly associated with the file that produced the error (thanks factubsio) 
+
 ### 0.4.1 - May 13 2020
 
 - The extension will now run `tl check` on .tl files when a plain .lua file is modified. This means that changes to tlconfig.lua are now acknowledged as soon as the file is saved.

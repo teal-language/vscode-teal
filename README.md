@@ -29,10 +29,10 @@ req | Local require | local name = require("module")
 loc | Local variable | local name = value
 fori | ipairs loop | for k, v in ipairs(sequence) do ... end
 forp | pairs loop | for k, v in pairs(table) do ... end
-lrec | Local record definition | local name = record ... end
-grec | Global record definition | global name = record ... end
-lenu | Local enum definition | local name = enum ... end
-genu | Global enum definition | global name = enum ... end
+lrec | Local record definition | local record name ... end
+grec | Global record definition | global record name ... end
+lenu | Local enum definition | local enum name ... end
+genu | Global enum definition | global enum name ... end
 
 ## FAQ
 
@@ -43,7 +43,7 @@ By default, this extension runs `tl check` at the root of the workspace.
 If your code resides in subdirectories (such as `src/` or `lib/`), you need to add the directories to `tlconfig.lua` at the root of the workspace:
 ```lua
 return {
-    include = {
+    include_dir = {
         "src/",
         "lib/"
     }

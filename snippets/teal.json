@@ -34,7 +34,7 @@
 	"lrec": {
 		"prefix": "lrec",
 		"body": [
-			"local ${1:name} = record",
+			"local record ${1:name}",
 			"\t$0",
 			"end"
 		],
@@ -43,7 +43,7 @@
 	"grec": {
 		"prefix": "grec",
 		"body": [
-			"global ${1:name} = record",
+			"global record ${1:name}",
 			"\t$0",
 			"end"
 		],
@@ -52,7 +52,7 @@
 	"lenu": {
 		"prefix": "lenu",
 		"body": [
-			"local ${1:name} = enum",
+			"local enum ${1:name}",
 			"\t\"$0\"",
 			"end"
 		],
@@ -61,7 +61,7 @@
 	"genu": {
 		"prefix": "genu",
 		"body": [
-			"global ${1:name} = enum",
+			"global enum ${1:name}",
 			"\t\"$0\"",
 			"end"
 		],
