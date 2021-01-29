@@ -301,6 +301,9 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 
 		let errorMessage = groups.errorMessage;
 
+		// Avoid showing the temporary file's name in the error message
+		errorMessage = errorMessage.replace(errorPath, fullPath);
+
 		let range = Range.create(lineNumber, columnNumber, lineNumber, columnNumber);
 
 		let diagnostic: Diagnostic = {
