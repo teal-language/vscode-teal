@@ -303,6 +303,9 @@
 					"name": "function.signature.teal",
 					"patterns": [
 						{
+							"include": "#comment"
+						},
+						{
 							"include": "#function-name"
 						},
 						{
@@ -386,6 +389,9 @@
 					"patterns": [
 						{
 							"include": "#type"
+						},
+						{
+							"include": "#comment"
 						}
 					]
 				}
