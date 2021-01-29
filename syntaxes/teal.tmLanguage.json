@@ -416,13 +416,13 @@
 		"function-type": {
 			"patterns": [
 				{
-					"begin": "(\\bfunction\\b)\\s*((?<=<)\\s*[a-zA-Z_][a-zA-Z0-9_, ]*\\s*(?=>)\\s*)?\\(",
+					"begin": "(\\bfunction\\b)\\s*(<\\s*)?([a-zA-Z_][a-zA-Z0-9_, ]*\\s*)?(>\\s*)?\\(",
 					"end": "\\)",
 					"beginCaptures": {
 						"1": {
 							"name": "keyword.declaration.function.teal"
 						},
-						"2": {
+						"3": {
 							"name": "support.type.teal"
 						}
 					},
@@ -437,12 +437,12 @@
 					]
 				},
 				{
-					"match": "(function)((?<=<)\\s*[a-zA-Z_][a-zA-Z0-9_, ]*\\s*(?=>)\\s*)?",
+					"match": "(\\bfunction\\b)\\s*(<\\s*)?([a-zA-Z_][a-zA-Z0-9_, ]*\\s*)?(>\\s*)?",
 					"captures": {
 						"1": {
 							"name": "keyword.declaration.function.teal"
 						},
-						"2": {
+						"3": {
 							"name": "support.type.teal"
 						}
 					}
