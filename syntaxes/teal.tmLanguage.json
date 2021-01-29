@@ -475,7 +475,7 @@
 					]
 				},
 				{
-					"begin": "([a-zA-Z_][a-zA-Z0-9_]*):",
+					"begin": "^\\s*([a-zA-Z_][a-zA-Z0-9_]*):",
 					"end": "=",
 					"beginCaptures": {
 						"1": {
