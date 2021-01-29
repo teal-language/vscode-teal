@@ -727,18 +727,11 @@
 			"name": "statement.while-block.teal",
 			"patterns": [
 				{
-					"begin": "(?<=\\bwhile\\b)",
-					"end": "\\bdo\\b",
-					"endCaptures": {
-						"0": {
-							"name": "keyword.control.teal"
-						}
-					},
-					"patterns": [
-						{
-							"include": "#expression"
-						}
-					]
+					"include": "#expression"
+				},
+				{
+					"match": "\\bdo\\b",
+					"name": "keyword.control.do.teal"
 				},
 				{
 					"include": "#statement"
@@ -756,18 +749,11 @@
 			"name": "statement.for-block.teal",
 			"patterns": [
 				{
-					"begin": "(?<=\\bfor\\b)",
-					"end": "\\bdo\\b",
-					"endCaptures": {
-						"0": {
-							"name": "keyword.control.teal"
-						}
-					},
-					"patterns": [
-						{
-							"include": "#expression"
-						}
-					]
+					"include": "#expression"
+				},
+				{
+					"match": "\\bdo\\b",
+					"name": "keyword.control.do.teal"
 				},
 				{
 					"include": "#statement"
@@ -795,7 +781,6 @@
 			"name": "storage.modifier.teal"
 		},
 		"type-annotation": {
-			"comment": "Matches the type annotations that have not yet been matched by other rules. Avoids matching method calls. Makes sure that function types are not interpreted as method calls.",
 			"patterns": [
 				{
 					"comment": "Crazy hack to match functions that are written on a single line. Right now, this rule does not match multiple return types and function types correctly.",
@@ -807,6 +792,7 @@
 					}
 				},
 				{
+					"comment": "Matches the type annotations that have not yet been matched by other rules. Avoids matching method calls. Makes sure that function types are not interpreted as method calls.",
 					"begin": ":(?:(?!(\\s*\\b((?!\\bfunction\\b)[a-zA-Z_][a-zA-Z0-9_]*)\\b(?=\\s*([({\"']|\\[\\[)))))",
 					"end": "=|;|$",
 					"patterns": [
