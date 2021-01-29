@@ -548,8 +548,18 @@
 					"name": "storage.type.userdata.teal"
 				},
 				{
-					"match": "^\\s*\\bmetamethod\\b",
-					"name": "storage.type.metamethod.teal"
+					"begin": "^\\s*\\bmetamethod\\b",
+					"end": ":",
+					"beginCaptures": {
+						"0": {
+							"name": "storage.type.metamethod.teal"
+						}
+					},
+					"patterns": [
+						{
+							"include": "#function-name"
+						}
+					]
 				},
 				{
 					"match": "^\\s*([a-zA-Z_][a-zA-Z0-9_]*)\\s*:",
