@@ -334,6 +334,9 @@
 					"name": "type.arguments.teal",
 					"patterns": [
 						{
+							"include": "#comment"
+						},
+						{
 							"include": "#type-arg"
 						}
 					]
@@ -356,6 +359,9 @@
 					"name": "function.arguments.teal",
 					"patterns": [
 						{
+							"include": "#comment"
+						},
+						{
 							"include": "#function-arg-name"
 						},
 						{
@@ -371,13 +377,23 @@
 					"comment": "First argument",
 					"begin": "(?<=\\()",
 					"end": "(?=:|\\))",
-					"name": "function.argument.teal"
+					"name": "function.argument.teal",
+					"patterns": [
+						{
+							"include": "#comment"
+						}
+					]
 				},
 				{
 					"comment": "Nth argument",
 					"begin": ",",
 					"end": "(?=:|\\))",
-					"name": "function.argument.teal"
+					"name": "function.argument.teal",
+					"patterns": [
+						{
+							"include": "#comment"
+						}
+					]
 				}
 			]
 		},
@@ -388,10 +404,10 @@
 					"end": "(?=,|\\))",
 					"patterns": [
 						{
-							"include": "#type"
+							"include": "#comment"
 						},
 						{
-							"include": "#comment"
+							"include": "#type"
 						}
 					]
 				}
@@ -428,6 +444,9 @@
 					},
 					"patterns": [
 						{
+							"include": "#comment"
+						},
+						{
 							"match": "[a-zA-Z_][a-zA-Z0-9_]*\\s*(?=:)",
 							"name": "function.argument.teal"
 						},
@@ -456,6 +475,9 @@
 					"begin": "{",
 					"end": "}",
 					"patterns": [
+						{
+							"include": "#comment"
+						},
 						{
 							"include": "#type"
 						}
@@ -489,6 +511,9 @@
 			"name": "teal.table-constructor",
 			"patterns": [
 				{
+					"include": "#comment"
+				},
+				{
 					"begin": "=",
 					"end": ";|,|(?=})",
 					"patterns": [
@@ -511,6 +536,9 @@
 					"begin": ":",
 					"end": "=|(?=\\))",
 					"patterns": [
+						{
+							"include": "#comment"
+						},
 						{
 							"include": "#function-call"
 						},
@@ -597,12 +625,20 @@
 						"0": {
 							"name": "support.type.teal"
 						}
-					}
+					},
+					"patterns": [
+						{
+							"include": "#comment"
+						}
+					]
 				},
 				{
 					"begin": "(?<==)",
 					"end": "$",
 					"patterns": [
+						{
+							"include": "#comment"
+						},
 						{
 							"include": "#record-block"
 						},
@@ -839,6 +875,9 @@
 					"begin": ":(?:(?!(\\s*\\b((?!\\bfunction\\b)[a-zA-Z_][a-zA-Z0-9_]*)\\b(?=\\s*([({\"']|\\[\\[)))))",
 					"end": "=|;|$",
 					"patterns": [
+						{
+							"include": "#comment"
+						},
 						{
 							"include": "#type"
 						}
