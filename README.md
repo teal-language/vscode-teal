@@ -2,13 +2,7 @@
 
 [![Node.js CI](https://img.shields.io/github/workflow/status/teal-language/vscode-teal/Node.js%20CI.svg?logo=github)](https://github.com/teal-language/vscode-teal/actions?query=workflow%3A%22Node.js+CI%22)
 
-Provides a language server and syntax highlighting for [Teal](https://github.com/teal-language/tl) in Visual Studio Code.
-
-## Features
-
-- Syntax highlighting
-- Error checking
-- Snippets
+Provides error checking and syntax highlighting for [Teal](https://github.com/teal-language/tl) in Visual Studio Code.
 
 ## Requirements
 
