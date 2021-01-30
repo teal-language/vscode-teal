@@ -1,3 +1,10 @@
+### 0.5.0 - January 29 2021
+
+- Improved syntax highlighting
+- The extension now reports errors detected in tlconfig.lua (instead of failing silently)
+- Add `Teal > Compiler Path` setting
+- Fix a `tl check` parsing issue which would occur when an error contains two different location markers (such as a "inferred at")
+
 ### 0.4.3 - September 22 2020
 
 - Add support for tl v0.8.0
