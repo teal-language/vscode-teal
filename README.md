@@ -13,7 +13,7 @@ luarocks install tl
 
 ## Installing
 
-This extension is available in the [VS Code Extension Marketplace](https://marketplace.visualstudio.com/items?itemName=pdesaulniers.vscode-teal).
+Download this extension from the [VS Code Extension Marketplace](https://marketplace.visualstudio.com/items?itemName=pdesaulniers.vscode-teal) or the [Open VSX Registry](https://open-vsx.org/extension/pdesaulniers/vscode-teal).
 
 ## Snippets
 
