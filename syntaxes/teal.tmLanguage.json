@@ -478,7 +478,7 @@
 		"function-call": {
 			"patterns": [
 				{
-					"match": "\\b((?!return|if|elseif|while|until|in)[a-zA-Z_][a-zA-Z0-9_]*)\\b(?=\\s*(?:[({\"']|\\[\\[))",
+					"match": "\\b((?!function|return|if|elseif|while|until|in)[a-zA-Z_][a-zA-Z0-9_]*)\\b(?=\\s*(?:[({\"']|\\[\\[))",
 					"name": "support.function.any-method.teal"
 				}
 			]
@@ -488,6 +488,15 @@
 			"end": "}",
 			"name": "teal.table-constructor",
 			"patterns": [
+				{
+					"begin": "=",
+					"end": ";|,|(?=})",
+					"patterns": [
+						{
+							"include": "#expression"
+						}
+					]
+				},
 				{
 					"begin": "\\[",
 					"end": "\\]",
@@ -499,21 +508,19 @@
 					]
 				},
 				{
-					"begin": "^\\s*([a-zA-Z_][a-zA-Z0-9_]*)\\s*:",
-					"end": "=",
-					"beginCaptures": {
-						"1": {
-							"name": "variable.other.teal"
-						}
-					},
+					"begin": ":",
+					"end": "=|(?=\\))",
 					"patterns": [
+						{
+							"include": "#function-call"
+						},
 						{
 							"include": "#type"
 						}
 					]
 				},
 				{
-					"match": "[a-zA-Z_][a-zA-Z0-9_]*\\s*(?==)",
+					"match": "[a-zA-Z_][a-zA-Z0-9_]*\\s*(?=.+=)",
 					"name": "variable.other.teal"
 				},
 				{
