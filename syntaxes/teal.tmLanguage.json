@@ -283,13 +283,12 @@
 							"name": "keyword.declaration.function.teal"
 						}
 					},
-					"name": "teal.function.block",
 					"patterns": [
 						{
 							"include": "#function-signature"
 						},
 						{
-							"include": "#statement"
+							"include": "#function-body"
 						}
 					]
 				}
@@ -298,7 +297,7 @@
 		"function-signature": {
 			"patterns": [
 				{
-					"begin": "(?<=\\bfunction\\b)",
+					"begin": "\\b",
 					"end": "\\)",
 					"name": "function.signature.teal",
 					"patterns": [
@@ -315,6 +314,16 @@
 							"include": "#function-args"
 						}
 					]
+				}
+			]
+		},
+		"function-body": {
+			"begin": "(?<=\\))",
+			"end": "(?=\\bend\\b)",
+			"name": "teal.function.body",
+			"patterns": [
+				{
+					"include": "#statement"
 				}
 			]
 		},
