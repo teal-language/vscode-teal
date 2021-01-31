@@ -1,3 +1,11 @@
+### 0.5.1 - January 30 2021
+
+A few bugfixes related to syntax highlighting:
+
+- Fix highlighting of method calls inside table constructors
+- Fix handling of comments inside table contructors, function signatures, etc.
+- Avoid matching the keyword 'function' inside comments
+
 ### 0.5.0 - January 29 2021
 
 - Improved syntax highlighting
