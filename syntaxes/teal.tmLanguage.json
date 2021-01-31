@@ -543,7 +543,7 @@
 				},
 				{
 					"begin": ":",
-					"end": "=|(?=\\))",
+					"end": "=|(?=\\))|(?=})",
 					"patterns": [
 						{
 							"include": "#comment"
