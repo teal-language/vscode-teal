@@ -509,8 +509,64 @@
 		"function-call": {
 			"patterns": [
 				{
-					"match": "\\b((?!function|return|if|elseif|while|until|in)[a-zA-Z_][a-zA-Z0-9_]*)\\b(?=\\s*(?:[({\"']|\\[\\[))",
-					"name": "support.function.any-method.teal"
+					"begin": "\\b((?!function|return|if|elseif|while|until|in)[a-zA-Z_][a-zA-Z0-9_]*)\\b(?=\\s*(?:\\())",
+					"end": "(?<=\\))",
+					"name": "function-call",
+					"beginCaptures": {
+						"1": {
+							"name": "support.function.any-method.teal"
+						}
+					},
+					"patterns": [
+						{
+							"include": "#parentheses"
+						}
+					]
+				},
+				{
+					"begin": "\\b((?!function|return|if|elseif|while|until|in)[a-zA-Z_][a-zA-Z0-9_]*)\\b(?=\\s*(?:\\{))",
+					"end": "(?<=})",
+					"name": "function-call",
+					"beginCaptures": {
+						"1": {
+							"name": "support.function.any-method.teal"
+						}
+					},
+					"patterns": [
+						{
+							"include": "#table-constructor"
+						}
+					]
+				},
+				{
+					"begin": "\\b((?!function|return|if|elseif|while|until|in)[a-zA-Z_][a-zA-Z0-9_]*)\\b(?=\\s*(\"|'))",
+					"end": "(?<=\\2)",
+					"name": "function-call",
+					"beginCaptures": {
+						"1": {
+							"name": "support.function.any-method.teal"
+						}
+					},
+					"patterns": [
+						{
+							"include": "#string"
+						}
+					]
+				},
+				{
+					"begin": "\\b((?!function|return|if|elseif|while|until|in)[a-zA-Z_][a-zA-Z0-9_]*)\\b(?=\\s*(\\[(=*)\\[))",
+					"end": "(?<=\\]\\3\\])",
+					"name": "function-call",
+					"beginCaptures": {
+						"1": {
+							"name": "support.function.any-method.teal"
+						}
+					},
+					"patterns": [
+						{
+							"include": "#long-string"
+						}
+					]
 				}
 			]
 		},
@@ -543,7 +599,7 @@
 				},
 				{
 					"begin": ":",
-					"end": "=|(?=\\))|(?=})",
+					"end": "(?=[=,}])",
 					"patterns": [
 						{
 							"include": "#comment"
