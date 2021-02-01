@@ -1,3 +1,10 @@
+### 0.5.3 - February 01 2021
+
+More bugfixes related to syntax highlighting:
+
+- Avoid matching method calls as type annotations in some circumstances
+- 'do' statements inside 'while' and 'for' bodies should now be matched correctly
+
 ### 0.5.1 - January 30 2021
 
 A few bugfixes related to syntax highlighting:
