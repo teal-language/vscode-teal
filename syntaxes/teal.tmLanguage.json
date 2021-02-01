@@ -297,7 +297,7 @@
 		"function-signature": {
 			"patterns": [
 				{
-					"begin": "\\b",
+					"begin": "(?<=\\bfunction\\b)",
 					"end": "\\)",
 					"name": "function.signature.teal",
 					"patterns": [
@@ -871,14 +871,29 @@
 			"name": "statement.while-block.teal",
 			"patterns": [
 				{
-					"include": "#expression"
+					"begin": "(?<=\\bwhile\\b)",
+					"end": "\\bdo\\b",
+					"name": "teal.while.expression",
+					"endCaptures": {
+						"0": {
+							"name": "keyword.control.do.teal"
+						}
+					},
+					"patterns": [
+						{
+							"include": "#expression"
+						}
+					]
 				},
 				{
-					"match": "\\bdo\\b",
-					"name": "keyword.control.do.teal"
-				},
-				{
-					"include": "#statement"
+					"begin": "(?<=\\bdo\\b)",
+					"end": "(?=\\bend\\b)",
+					"name": "teal.while.body",
+					"patterns": [
+						{
+							"include": "#statement"
+						}
+					]
 				}
 			]
 		},
@@ -890,17 +905,32 @@
 					"name": "keyword.control.teal"
 				}
 			},
-			"name": "statement.for-block.teal",
+			"name": "statement.for.teal",
 			"patterns": [
 				{
-					"include": "#expression"
+					"begin": "(?<=\\bfor\\b)",
+					"end": "\\bdo\\b",
+					"name": "teal.for.expression",
+					"endCaptures": {
+						"0": {
+							"name": "keyword.control.do.teal"
+						}
+					},
+					"patterns": [
+						{
+							"include": "#expression"
+						}
+					]
 				},
 				{
-					"match": "\\bdo\\b",
-					"name": "keyword.control.do.teal"
-				},
-				{
-					"include": "#statement"
+					"begin": "(?<=\\bdo\\b)",
+					"end": "(?=\\bend\\b)",
+					"name": "teal.for.body",
+					"patterns": [
+						{
+							"include": "#statement"
+						}
+					]
 				}
 			]
 		},
