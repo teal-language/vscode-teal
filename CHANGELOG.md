@@ -1,3 +1,7 @@
+### 0.5.4 - February 02 2021
+
+Fix another bug which would cause method calls to be highlighted as type annotations
+
 ### 0.5.3 - February 01 2021
 
 More bugfixes related to syntax highlighting:
