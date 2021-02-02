@@ -509,7 +509,7 @@
 		"function-call": {
 			"patterns": [
 				{
-					"begin": "\\b((?!\\bfunction\\b|\\breturn\\b|\\bif\\b|\\belseif\\b|\\bwhile\\b|\\bin\\b)[a-zA-Z_][a-zA-Z0-9_]*)\\b(?=\\s*(?:\\())",
+					"begin": "\\b((?!\\bfunction\\b|\\breturn\\b|\\bif\\b|\\belseif\\b|\\bwhile\\b|\\buntil\\b|\\bin\\b)[a-zA-Z_][a-zA-Z0-9_]*)\\b(?=\\s*(?:\\())",
 					"end": "(?<=\\))",
 					"name": "function-call",
 					"beginCaptures": {
