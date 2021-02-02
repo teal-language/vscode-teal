@@ -509,7 +509,7 @@
 		"function-call": {
 			"patterns": [
 				{
-					"begin": "\\b((?!function|return|if|elseif|while|until|in)[a-zA-Z_][a-zA-Z0-9_]*)\\b(?=\\s*(?:\\())",
+					"begin": "\\b((?!\\bfunction\\b|\\breturn\\b|\\bif\\b|\\belseif\\b|\\bwhile\\b|\\bin\\b)[a-zA-Z_][a-zA-Z0-9_]*)\\b(?=\\s*(?:\\())",
 					"end": "(?<=\\))",
 					"name": "function-call",
 					"beginCaptures": {
@@ -524,7 +524,7 @@
 					]
 				},
 				{
-					"begin": "\\b((?!function|return|if|elseif|while|until|in)[a-zA-Z_][a-zA-Z0-9_]*)\\b(?=\\s*(?:\\{))",
+					"begin": "\\b((?!\\bfunction\\b|\\breturn\\b|\\bif\\b|\\belseif\\b|\\bwhile\\b|\\buntil\\b|\\bin\\b)[a-zA-Z_][a-zA-Z0-9_]*)\\b(?=\\s*(?:\\{))",
 					"end": "(?<=})",
 					"name": "function-call",
 					"beginCaptures": {
@@ -539,7 +539,7 @@
 					]
 				},
 				{
-					"begin": "\\b((?!function|return|if|elseif|while|until|in)[a-zA-Z_][a-zA-Z0-9_]*)\\b(?=\\s*(\"|'))",
+					"begin": "\\b((?!\\bfunction\\b|\\breturn\\b|\\bif\\b|\\belseif\\b|\\bwhile\\b|\\buntil\\b|\\bin\\b)[a-zA-Z_][a-zA-Z0-9_]*)\\b(?=\\s*(\"|'))",
 					"end": "(?<=\\2)",
 					"name": "function-call",
 					"beginCaptures": {
@@ -554,7 +554,7 @@
 					]
 				},
 				{
-					"begin": "\\b((?!function|return|if|elseif|while|until|in)[a-zA-Z_][a-zA-Z0-9_]*)\\b(?=\\s*(\\[(=*)\\[))",
+					"begin": "\\b((?!\\bfunction\\b|\\breturn\\b|\\bif\\b|\\belseif\\b|\\bwhile\\b|\\buntil\\b|\\bin\\b)[a-zA-Z_][a-zA-Z0-9_]*)\\b(?=\\s*(\\[(=*)\\[))",
 					"end": "(?<=\\]\\3\\])",
 					"name": "function-call",
 					"beginCaptures": {
@@ -957,7 +957,7 @@
 		"type-annotation": {
 			"patterns": [
 				{
-					"comment": "Matches the type annotations that have not yet been matched by other rules. Avoids matching method calls. Assumes that one line functions with a return type contain only a 'return' statement...",
+					"comment": "Matches the type annotations that have not yet been matched by other rules. Matches method calls as well. Assumes that one line functions with a return type contain only a 'return' statement...",
 					"begin": ":",
 					"end": "(?<=\\))|=|;|$|(?=\\breturn\\b)",
 					"patterns": [
