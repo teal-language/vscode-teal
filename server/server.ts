@@ -515,6 +515,7 @@ function getWordRangeAtPosition(document: TextDocument, position: Position): Ran
 	let start = position.character;
 	let end = position.character;
 
+	// Make sure the cursor is on an identifier
 	if (!identifierRegex.exec(str[start])) {
 		return null;
 	}
@@ -571,7 +572,10 @@ async function getTypeInfoAtPosition(textDocumentIdentifier: TextDocumentIdentif
 	if (typeRef !== undefined) {
 		typeDefinition = typesJson["types"][typeRef];
 
-		if (typeDefinition["str"] !== "type record") {
+		if (typeDefinition["str"] === "type record" && typeName !== undefined) {
+			typeName = "record " + typeName;
+		}
+		else {
 			typeName = typeDefinition["str"];
 		}
 	}
