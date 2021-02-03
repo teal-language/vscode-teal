@@ -15,6 +15,7 @@ import {
 	TextDocumentSyncKind,
 	TextDocumentPositionParams,
 	CompletionItem,
+	CompletionItemKind,
 	MessageActionItem,
 	ShowMessageRequestParams,
 	MessageType,
@@ -23,7 +24,11 @@ import {
 	WorkspaceFolder,
 	WorkspaceFoldersRequest,
 	FormattingOptions,
-} from 'vscode-languageserver';
+	Location,
+	TextDocumentIdentifier,
+	Definition,
+	Position
+} from 'vscode-languageserver/node';
 
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { URI } from 'vscode-uri';
@@ -32,6 +37,23 @@ import path = require('path');
 import { existsSync } from 'fs';
 import util = require("util");
 import { spawn } from 'child_process';
+import { resourceLimits } from 'worker_threads';
+
+interface TLCommandResult {
+	filePath: string,
+	stdout: string,
+	stderr: string
+};
+
+interface TLTypeInfo {
+	location: Location,
+	name: string
+};
+
+enum TLCommand {
+	Check = "check",
+	Types = "types"
+};
 
 const write = util.promisify(require("fs").write);
 
@@ -39,7 +61,7 @@ const documents = new TextDocuments(TextDocument);
 
 // Create a connection for the server. The connection uses Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
-let connection = createConnection(ProposedFeatures.all);
+let connection = createConnection(ProposedFeatures.all,);
 
 let hasConfigurationCapability: boolean = false;
 let hasWorkspaceFolderCapability: boolean = false;
@@ -66,11 +88,13 @@ connection.onInitialize((params: InitializeParams) => {
 
 	return {
 		capabilities: {
+			definitionProvider: true,
 			textDocumentSync: TextDocumentSyncKind.Full,
 			// Tell the client that the server DOES NOT support code completion
 			completionProvider: {
 				resolveProvider: false
-			}
+			},
+			hoverProvider: true
 		}
 	};
 });
@@ -184,7 +208,51 @@ function getCompilerPath(settings: TealServerSettings) {
 	}
 }
 
-async function runTLCheck(filePath: string, settings: TealServerSettings): Promise<string> {
+const tmpBufferPrefix = "__tl__tmp__check-";
+
+async function pathInWorkspace(textDocument: TextDocument, pathToCheck: string): Promise<string | null> {
+	if (path.basename(pathToCheck).startsWith(tmpBufferPrefix)) {
+		return textDocument.uri
+	}
+
+	let workspaceFolders = await connection.workspace.getWorkspaceFolders();
+	let resolvedPath: string | null = null;
+
+	workspaceFolders?.forEach((folder) => {
+		let folderPath = URI.parse(folder.uri).fsPath
+		let fullPath = path.join(folderPath, pathToCheck);
+
+		if (existsSync(fullPath)) {
+			resolvedPath = URI.file(fullPath).toString()
+			return;
+		}
+	});
+
+	return resolvedPath;
+}
+
+/**
+ * Runs a `tl` command on a specific text.
+ */
+async function runTLCommand(command: TLCommand, text: string, settings: TealServerSettings): Promise<TLCommandResult | null> {
+	try {
+		return await withFile(async ({ path, fd }) => {
+			await write(fd, text);
+
+			try {
+				let result = await _runTLCommand(command, path, settings);
+				return result;
+			} catch (error) {
+				throw error;
+			}
+		}, { prefix: tmpBufferPrefix });
+	} catch (error) {
+		await showErrorMessage(error.message);
+		return null;
+	}
+}
+
+async function _runTLCommand(command: TLCommand, filePath: string, settings: TealServerSettings): Promise<TLCommandResult> {
 	let child: any;
 
 	let platform = process.platform;
@@ -192,9 +260,9 @@ async function runTLCheck(filePath: string, settings: TealServerSettings): Promi
 	const compilerPath = getCompilerPath(settings);
 
 	if (platform == "win32") {
-		child = spawn('cmd.exe', ['/c', compilerPath, "check", filePath]);
+		child = spawn('cmd.exe', ['/c', compilerPath, "-q", command, filePath]);
 	} else {
-		child = spawn(compilerPath, ["check", filePath]);
+		child = spawn(compilerPath, ["-q", command, filePath]);
 	}
 
 	return await new Promise(async function (resolve, reject) {
@@ -218,7 +286,7 @@ async function runTLCheck(filePath: string, settings: TealServerSettings): Promi
 		});
 
 		child.on('close', function (exitCode: any) {
-			resolve(stderr);
+			resolve({ filePath: filePath, stdout: stdout, stderr: stderr });
 		});
 
 		for await (const chunk of child.stdout) {
@@ -234,23 +302,9 @@ async function runTLCheck(filePath: string, settings: TealServerSettings): Promi
 async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	let settings = await getDocumentSettings(textDocument.uri);
 
-	let checkResult: string;
+	let checkResult = await runTLCommand(TLCommand.Check, textDocument.getText(), settings);
 
-	const tmpBufferPrefix = "__tl__tmp__check-";
-
-	try {
-		checkResult = await withFile(async ({ path, fd }) => {
-			await write(fd, textDocument.getText());
-
-			try {
-				let result = await runTLCheck(path, settings);
-				return result;
-			} catch (error) {
-				throw error;
-			}
-		}, { prefix: tmpBufferPrefix });
-	} catch (error) {
-		await showErrorMessage(error.message);
+	if (checkResult === null) {
 		return;
 	}
 
@@ -261,32 +315,11 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 
 	let syntaxError: RegExpExecArray | null;
 
-	async function pathInWorkspace(pathToCheck: string): Promise<string | null> {
-		if (path.basename(pathToCheck).startsWith(tmpBufferPrefix)) {
-			return textDocument.uri
-		}
-
-		let workspaceFolders = await connection.workspace.getWorkspaceFolders();
-		let resolvedPath: string | null = null;
-
-		workspaceFolders?.forEach((folder) => {
-			let folderPath = URI.parse(folder.uri).fsPath
-			let fullPath = path.join(folderPath, pathToCheck);
-
-			if (existsSync(fullPath)) {
-				resolvedPath = URI.file(fullPath).toString()
-				return;
-			}
-		});
-
-		return resolvedPath;
-	}
-
-	while ((syntaxError = errorPattern.exec(checkResult))) {		
+	while ((syntaxError = errorPattern.exec(checkResult.stderr))) {
 		const groups = syntaxError.groups!;
 
 		let errorPath = path.normalize(groups.fileName);
-		let fullPath = await pathInWorkspace(errorPath);
+		let fullPath = await pathInWorkspace(textDocument, errorPath);
 
 		if (fullPath === null) {
 			continue;
@@ -332,6 +365,93 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	}
 }
 
+/* async function autoComplete(textDocumentPositionParams: TextDocumentPositionParams): Promise<CompletionItem[]> {
+	let textDocument = documents.get(textDocumentPositionParams.textDocument.uri);
+
+	if (textDocument === undefined) {
+		return [];
+	}
+
+	let settings = await getDocumentSettings(textDocument.uri);
+
+	let typesCmdResult: string;
+
+	try {
+		typesCmdResult = await withFile(async ({ path, fd }) => {
+			await write(fd, textDocument!.getText());
+
+			try {
+				let result = await runTL("types", path, settings);
+				return result.stdout;
+			} catch (error) {
+				throw error;
+			}
+		}, { prefix: tmpBufferPrefix });
+	} catch (error) {
+		await showErrorMessage(error.message);
+		return [];
+	}
+
+	let typesJson = JSON.parse(typesCmdResult);
+
+	// Built-in types
+	let result: CompletionItem[] = [
+		{
+			label: 'any',
+			kind: CompletionItemKind.Keyword,
+			data: 0
+		},
+		{
+			label: 'number',
+			kind: CompletionItemKind.Keyword,
+			data: 0
+		},
+		{
+			label: 'string',
+			kind: CompletionItemKind.Keyword,
+			data: 0
+		},
+		{
+			label: 'boolean',
+			kind: CompletionItemKind.Keyword,
+			data: 0
+		}
+	];
+
+	for (let x in typesJson["types"]) {
+		let typ = typesJson["types"][x];
+
+		console.log(typ);
+
+		if (typ["ref"] !== undefined) {
+			result.push(
+				{
+					label: typ["str"],
+					kind: CompletionItemKind.Class,
+					data: x
+				}
+			);
+		}
+	}
+
+	return result;
+}
+
+connection.onCompletion(autoComplete);
+
+// This handler resolves additional information for the item selected in
+// the completion list.
+connection.onCompletionResolve(
+	(item: CompletionItem): CompletionItem => {
+		if (item.data === 0) {
+			item.detail = 'Built-in type';
+			item.documentation = 'Built-in type';
+		}
+
+		return item;
+	}
+); */
+
 // This handler provides the initial list of the completion items.
 connection.onCompletion(
 	(_textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
@@ -340,6 +460,135 @@ connection.onCompletion(
 		];
 	}
 );
+
+const identifierRegex = /[a-zA-Z0-9_]/;
+
+function getWordRangeAtPosition(document: TextDocument, position: Position): Range | null {
+	// Get text on current line
+	let str = document.getText(Range.create(position.line, 0, position.line, position.character));
+
+	let start = position.character;
+	let end = position.character;
+
+	if (!identifierRegex.exec(str[start])) {
+		return null;
+	}
+
+	while (start > 0 && identifierRegex.exec(str[start - 1])) {
+		start--;
+	}
+
+	while (end < str.length - 1 && identifierRegex.exec(str[end + 1])) {
+		end++;
+	}
+
+	return Range.create(position.line, start, position.line, end);
+}
+
+async function getTypeInfoAtPosition(textDocumentIdentifier: TextDocumentIdentifier, position: Position): Promise<TLTypeInfo | null> {
+	const textDocument = documents.get(textDocumentIdentifier.uri);
+
+	if (textDocument === undefined) {
+		return null;
+	}
+
+	let settings = await getDocumentSettings(textDocument.uri);
+
+	let typesCmdResult = await runTLCommand(TLCommand.Types, textDocument.getText(), settings);
+
+	if (typesCmdResult === null) {
+		return null;
+	}
+
+	let typesJson = JSON.parse(typesCmdResult.stdout);
+
+	const tmpPath = typesCmdResult.filePath;
+
+	let wordRange = getWordRangeAtPosition(textDocument, position);
+
+	if (wordRange === null) {
+		return null;
+	};
+
+	let typeId: string | undefined = typesJson?.["by_pos"]?.[tmpPath]?.[position.line + 1]?.[wordRange.start.character + 1];
+
+	if (typeId === undefined) {
+		return null;
+	}
+
+	let typeDefinition: any | undefined = typesJson?.["types"]?.[typeId];
+
+	if (typeDefinition === undefined) {
+		return null;
+	}
+
+	let typeName = typeDefinition["str"];
+
+	let typeRef: string | undefined = typeDefinition["ref"];
+
+	if (typeRef !== undefined) {
+		typeDefinition = typesJson["types"][typeRef];
+
+		if (typeDefinition["str"] !== "type record") {
+			typeName = typeDefinition["str"];
+		}
+	}
+
+	let destinationY = typeDefinition["y"];
+	let destinationX = typeDefinition["x"];
+
+	if (destinationY === undefined || destinationX == undefined) {
+		return null;
+	}
+
+	let typeFile: string | undefined = typeDefinition["file"];
+
+	if (typeFile === undefined) {
+		typeFile = tmpPath;
+	}
+
+	let destinationRange = Range.create(destinationY - 1, destinationX - 1, destinationY - 1, destinationX - 1);
+
+	let destinationUri: string | null = await pathInWorkspace(textDocument, typeFile);
+
+	if (destinationUri === null) {
+		return null;
+	}
+
+	if (typeName === undefined) {
+		return null;
+	}
+
+	return {
+		location: Location.create(destinationUri, destinationRange),
+		name: typeName
+	}
+}
+
+connection.onDefinition(async function (params) {
+	const typeAtCursor = await getTypeInfoAtPosition(params.textDocument, params.position);
+
+	if (typeAtCursor === null) {
+		return null;
+	}
+
+	return typeAtCursor.location;
+});
+
+connection.onHover(async function (params) {
+	const typeAtCursor = await getTypeInfoAtPosition(params.textDocument, params.position);
+
+	if (typeAtCursor === null) {
+		return null;
+	}
+
+	return {
+		contents: {
+			kind: 'markdown',
+			value: "```teal.type\n" + typeAtCursor.name + "\n```",
+		},
+	};
+});
 
 // Make the text document manager listen on the connection
 // for open, change and close text document events
