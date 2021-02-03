@@ -37,7 +37,6 @@ import path = require('path');
 import { existsSync } from 'fs';
 import util = require("util");
 import { spawn } from 'child_process';
-import { resourceLimits } from 'worker_threads';
 
 interface TLCommandResult {
 	filePath: string,
