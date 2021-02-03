@@ -27,7 +27,8 @@ import {
 	Location,
 	TextDocumentIdentifier,
 	Definition,
-	Position
+	Position,
+	MarkupKind
 } from 'vscode-languageserver/node';
 
 import { TextDocument } from 'vscode-languageserver-textdocument';
@@ -38,20 +39,25 @@ import { existsSync } from 'fs';
 import util = require("util");
 import { spawn } from 'child_process';
 
-interface TLCommandResult {
+interface TLCommandIOInfo {
 	filePath: string,
 	stdout: string,
 	stderr: string
 };
 
-interface TLTypeInfo {
-	location: Location,
-	name: string
-};
-
 enum TLCommand {
 	Check = "check",
 	Types = "types"
+};
+
+interface TLTypesCommandInfo {
+	ioInfo: TLCommandIOInfo,
+	json: any
+}
+
+interface TLTypeInfo {
+	location: Location,
+	name: string
 };
 
 const write = util.promisify(require("fs").write);
@@ -130,12 +136,15 @@ const defaultSettings: TealServerSettings = {
 let globalSettings: TealServerSettings = defaultSettings;
 
 // Cache the settings of all open documents
-let documentSettings: Map<string, Thenable<TealServerSettings>> = new Map();
+let settingsCache: Map<string, Thenable<TealServerSettings>> = new Map();
+
+// Cache "tl types" queries of all open documents
+let typesCommandCache: Map<string, TLTypesCommandInfo> = new Map();
 
 connection.onDidChangeConfiguration(change => {
 	if (hasConfigurationCapability) {
 		// Reset all cached document settings
-		documentSettings.clear();
+		settingsCache.clear();
 	} else {
 		globalSettings = <TealServerSettings>(
 			(change.settings.teal || defaultSettings)
@@ -146,28 +155,62 @@ connection.onDidChangeConfiguration(change => {
 	documents.all().forEach(validateTextDocument);
 });
 
-function getDocumentSettings(resource: string): Thenable<TealServerSettings> {
+function getDocumentSettings(uri: string): Thenable<TealServerSettings> {
 	if (!hasConfigurationCapability) {
 		return Promise.resolve(globalSettings);
 	}
 
-	let result = documentSettings.get(resource);
+	let result = settingsCache.get(uri);
 
 	if (!result) {
 		result = connection.workspace.getConfiguration({
-			scopeUri: resource,
+			scopeUri: uri,
 			section: 'teal'
 		});
 
-		documentSettings.set(resource, result);
+		settingsCache.set(uri, result);
 	}
 
 	return result;
 }
 
-// Only keep settings for open documents
+async function getTypeInfo(uri: string): Promise<TLTypesCommandInfo | null> {
+	const cachedResult = typesCommandCache.get(uri);
+
+	if (cachedResult !== undefined) {
+		return cachedResult;
+	}
+
+	const textDocument = documents.get(uri);
+
+	if (textDocument === undefined) {
+		return null;
+	}
+
+	const settings = await getDocumentSettings(textDocument.uri);
+
+	const typesCmdResult = await runTLCommand(TLCommand.Types, textDocument.getText(), settings);
+
+	if (typesCmdResult === null) {
+		return null;
+	}
+
+	const json: any = JSON.parse(typesCmdResult.stdout);
+
+	const result = {
+		ioInfo: typesCmdResult,
+		json: json
+	};
+
+	typesCommandCache.set(uri, result);
+
+	return result;
+}
+
+// Only keep caches for open documents
 documents.onDidClose(e => {
-	documentSettings.delete(e.document.uri);
+	settingsCache.delete(e.document.uri);
+	typesCommandCache.delete(e.document.uri);
 });
 
 async function showErrorMessage(message: string, ...actions: MessageActionItem[]) {
@@ -180,6 +223,9 @@ async function showErrorMessage(message: string, ...actions: MessageActionItem[]
 // when the text document first opened or when its content has changed.
 documents.onDidChangeContent(change => {
 	validateTextDocument(change.document);
+
+	// Make sure we get the latest 'tl types' data
+	typesCommandCache.delete(change.document.uri);
 });
 
 // Monitored files have changed in VS Code
@@ -233,7 +279,7 @@ async function pathInWorkspace(textDocument: TextDocument, pathToCheck: string):
 /**
  * Runs a `tl` command on a specific text.
  */
-async function runTLCommand(command: TLCommand, text: string, settings: TealServerSettings): Promise<TLCommandResult | null> {
+async function runTLCommand(command: TLCommand, text: string, settings: TealServerSettings): Promise<TLCommandIOInfo | null> {
 	try {
 		return await withFile(async ({ path, fd }) => {
 			await write(fd, text);
@@ -251,7 +297,7 @@ async function runTLCommand(command: TLCommand, text: string, settings: TealServ
 	}
 }
 
-async function _runTLCommand(command: TLCommand, filePath: string, settings: TealServerSettings): Promise<TLCommandResult> {
+async function _runTLCommand(command: TLCommand, filePath: string, settings: TealServerSettings): Promise<TLCommandIOInfo> {
 	let child: any;
 
 	let platform = process.platform;
@@ -491,17 +537,14 @@ async function getTypeInfoAtPosition(textDocumentIdentifier: TextDocumentIdentif
 		return null;
 	}
 
-	let settings = await getDocumentSettings(textDocument.uri);
+	const typeInfo = await getTypeInfo(textDocumentIdentifier.uri);
 
-	let typesCmdResult = await runTLCommand(TLCommand.Types, textDocument.getText(), settings);
-
-	if (typesCmdResult === null) {
+	if (typeInfo === null) {
 		return null;
 	}
 
-	let typesJson = JSON.parse(typesCmdResult.stdout);
-
-	const tmpPath = typesCmdResult.filePath;
+	const tmpPath = typeInfo.ioInfo.filePath;
+	const typesJson = typeInfo.json;
 
 	let wordRange = getWordRangeAtPosition(textDocument, position);
 
@@ -533,6 +576,10 @@ async function getTypeInfoAtPosition(textDocumentIdentifier: TextDocumentIdentif
 		}
 	}
 
+	if (typeName === undefined) {
+		return null;
+	}
+
 	let destinationY = typeDefinition["y"];
 	let destinationX = typeDefinition["x"];
 
@@ -551,10 +598,6 @@ async function getTypeInfoAtPosition(textDocumentIdentifier: TextDocumentIdentif
 	let destinationUri: string | null = await pathInWorkspace(textDocument, typeFile);
 
 	if (destinationUri === null) {
-		return null;
-	}
-
-	if (typeName === undefined) {
 		return null;
 	}
 
@@ -583,9 +626,9 @@ connection.onHover(async function (params) {
 
 	return {
 		contents: {
-			kind: 'markdown',
-			value: "```teal.type\n" + typeAtCursor.name + "\n```",
-		},
+			kind: MarkupKind.Markdown,
+			value: "```teal\n" + typeAtCursor.name + "\n```",
+		}
 	};
 });
 
