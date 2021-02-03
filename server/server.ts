@@ -35,7 +35,7 @@ import { TextDocument } from 'vscode-languageserver-textdocument';
 import { URI } from 'vscode-uri';
 import { withFile } from 'tmp-promise'
 import path = require('path');
-import { existsSync } from 'fs';
+import { access as fsAccess, constants as fsConstants } from 'fs';
 import util = require("util");
 import { spawn } from 'child_process';
 
@@ -60,17 +60,25 @@ interface TLTypeInfo {
 	name: string
 };
 
+function fileExists(filePath: string): Promise<boolean> {
+	return new Promise((resolve, reject) => {
+		fsAccess(filePath, fsConstants.F_OK, function (error) {
+			resolve(error === null);
+		});
+	});
+}
+
 const write = util.promisify(require("fs").write);
 
 const documents = new TextDocuments(TextDocument);
 
 // Create a connection for the server. The connection uses Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
-let connection = createConnection(ProposedFeatures.all,);
+let connection = createConnection(ProposedFeatures.all);
 
-let hasConfigurationCapability: boolean = false;
-let hasWorkspaceFolderCapability: boolean = false;
-let hasDiagnosticRelatedInformationCapability: boolean = false;
+let hasConfigurationCapability = false;
+let hasWorkspaceFolderCapability = false;
+let hasDiagnosticRelatedInformationCapability = false;
 
 connection.onInitialize((params: InitializeParams) => {
 	let capabilities = params.capabilities;
@@ -94,12 +102,14 @@ connection.onInitialize((params: InitializeParams) => {
 	return {
 		capabilities: {
 			definitionProvider: true,
+			typeDefinitionProvider: true,
 			textDocumentSync: TextDocumentSyncKind.Full,
+			hoverProvider: true,
+
 			// Tell the client that the server DOES NOT support code completion
 			completionProvider: {
 				resolveProvider: false
-			},
-			hoverProvider: true
+			}
 		}
 	};
 });
@@ -109,6 +119,7 @@ connection.onInitialized(() => {
 		// Register for all configuration changes.
 		connection.client.register(DidChangeConfigurationNotification.type, undefined);
 	}
+
 	if (hasWorkspaceFolderCapability) {
 		connection.workspace.onDidChangeWorkspaceFolders(_event => {
 			connection.console.log('Workspace folder change event received.');
@@ -153,6 +164,8 @@ connection.onDidChangeConfiguration(change => {
 
 	// Revalidate all open text documents
 	documents.all().forEach(validateTextDocument);
+
+	typesCommandCache.clear();
 });
 
 function getDocumentSettings(uri: string): Thenable<TealServerSettings> {
@@ -263,11 +276,11 @@ async function pathInWorkspace(textDocument: TextDocument, pathToCheck: string):
 	let workspaceFolders = await connection.workspace.getWorkspaceFolders();
 	let resolvedPath: string | null = null;
 
-	workspaceFolders?.forEach((folder) => {
+	workspaceFolders?.forEach(async (folder) => {
 		let folderPath = URI.parse(folder.uri).fsPath
 		let fullPath = path.join(folderPath, pathToCheck);
 
-		if (existsSync(fullPath)) {
+		if (await fileExists(fullPath)) {
 			resolvedPath = URI.file(fullPath).toString()
 			return;
 		}
@@ -612,6 +625,16 @@ async function getTypeInfoAtPosition(textDocumentIdentifier: TextDocumentIdentif
 }
 
 connection.onDefinition(async function (params) {
+	const typeAtCursor = await getTypeInfoAtPosition(params.textDocument, params.position);
+
+	if (typeAtCursor === null) {
+		return null;
+	}
+
+	return typeAtCursor.location;
+});
+
+connection.onTypeDefinition(async function (params) {
 	const typeAtCursor = await getTypeInfoAtPosition(params.textDocument, params.position);
 
 	if (typeAtCursor === null) {
