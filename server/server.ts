@@ -38,6 +38,7 @@ import path = require('path');
 import { access as fsAccess, constants as fsConstants } from 'fs';
 import util = require("util");
 import { spawn } from 'child_process';
+import { symbolsInScope } from './teal';
 
 interface TLCommandIOInfo {
 	filePath: string,
@@ -105,10 +106,8 @@ connection.onInitialize((params: InitializeParams) => {
 			typeDefinitionProvider: true,
 			textDocumentSync: TextDocumentSyncKind.Full,
 			hoverProvider: true,
-
-			// Tell the client that the server DOES NOT support code completion
 			completionProvider: {
-				resolveProvider: false
+				resolveProvider: true
 			}
 		}
 	};
@@ -428,73 +427,74 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	}
 }
 
-/* async function autoComplete(textDocumentPositionParams: TextDocumentPositionParams): Promise<CompletionItem[]> {
+async function autoComplete(textDocumentPositionParams: TextDocumentPositionParams): Promise<CompletionItem[]> {
 	let textDocument = documents.get(textDocumentPositionParams.textDocument.uri);
 
 	if (textDocument === undefined) {
 		return [];
 	}
 
-	let settings = await getDocumentSettings(textDocument.uri);
+	const position = textDocumentPositionParams.position;
 
-	let typesCmdResult: string;
+	const typeInfo = await getTypeInfo(textDocument.uri);
 
-	try {
-		typesCmdResult = await withFile(async ({ path, fd }) => {
-			await write(fd, textDocument!.getText());
-
-			try {
-				let result = await runTL("types", path, settings);
-				return result.stdout;
-			} catch (error) {
-				throw error;
-			}
-		}, { prefix: tmpBufferPrefix });
-	} catch (error) {
-		await showErrorMessage(error.message);
+	if (typeInfo === null) {
 		return [];
 	}
-
-	let typesJson = JSON.parse(typesCmdResult);
 
 	// Built-in types
 	let result: CompletionItem[] = [
 		{
 			label: 'any',
 			kind: CompletionItemKind.Keyword,
-			data: 0
+			data: -1
 		},
 		{
 			label: 'number',
 			kind: CompletionItemKind.Keyword,
-			data: 0
+			data: -2
 		},
 		{
 			label: 'string',
 			kind: CompletionItemKind.Keyword,
-			data: 0
+			data: -3
 		},
 		{
 			label: 'boolean',
 			kind: CompletionItemKind.Keyword,
-			data: 0
+			data: -4
 		}
 	];
 
-	for (let x in typesJson["types"]) {
-		let typ = typesJson["types"][x];
+	let symbols = symbolsInScope(typeInfo.json, position.line, position.character);
 
-		console.log(typ);
+	console.log(symbols);
 
-		if (typ["ref"] !== undefined) {
-			result.push(
-				{
-					label: typ["str"],
-					kind: CompletionItemKind.Class,
-					data: x
-				}
-			);
+	for (const symbol of symbols) {
+		let typeDefinition: any | undefined = typeInfo.json?.["types"]?.[symbol.typeId];
+
+		if (typeDefinition === undefined || typeDefinition["str"] === undefined) {
+			continue;
 		}
+
+		let kind: CompletionItemKind = CompletionItemKind.Interface;
+
+		if (typeDefinition["ref"] !== undefined) {
+			kind = CompletionItemKind.Variable;
+		} else if (typeDefinition["str"].startsWith("function(")) {
+			kind = CompletionItemKind.Function;
+		} else if (typeDefinition["enums"] !== undefined) {
+			kind = CompletionItemKind.Enum;
+		} else if (typeDefinition["str"].startsWith("type record")) {
+			kind = CompletionItemKind.Class;
+		}
+
+		result.push({
+			label: symbol.identifier,
+			kind: kind,
+			data: symbol.typeId,
+			detail: typeDefinition.str
+		});
 	}
 
 	return result;
@@ -512,15 +512,6 @@ connection.onCompletionResolve(
 		}
 
 		return item;
-	}
-); */
-
-// This handler provides the initial list of the completion items.
-connection.onCompletion(
-	(_textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
-		// TODO
-		return [
-		];
 	}
 );
 
