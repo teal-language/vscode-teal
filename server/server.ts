@@ -50,7 +50,7 @@ enum TLCommand {
 	Types = "types"
 };
 
-interface TLTypesCommandInfo {
+interface TLTypesCommandResult {
 	ioInfo: TLCommandIOInfo,
 	json: any
 }
@@ -150,7 +150,7 @@ let globalSettings: TealServerSettings = defaultSettings;
 let settingsCache: Map<string, Thenable<TealServerSettings>> = new Map();
 
 // Cache "tl types" queries of all open documents
-let typesCommandCache: Map<string, TLTypesCommandInfo> = new Map();
+let typesCommandCache: Map<string, TLTypesCommandResult> = new Map();
 
 connection.onDidChangeConfiguration(change => {
 	if (hasConfigurationCapability) {
@@ -187,7 +187,7 @@ function getDocumentSettings(uri: string): Thenable<TealServerSettings> {
 	return result;
 }
 
-async function getTypeInfo(uri: string): Promise<TLTypesCommandInfo | null> {
+async function getTypeInfo(uri: string): Promise<TLTypesCommandResult | null> {
 	const cachedResult = typesCommandCache.get(uri);
 
 	if (cachedResult !== undefined) {
@@ -274,17 +274,22 @@ async function pathInWorkspace(textDocument: TextDocument, pathToCheck: string):
 	}
 
 	let workspaceFolders = await connection.workspace.getWorkspaceFolders();
+
+	if (workspaceFolders === null) {
+		return null;
+	}
+
 	let resolvedPath: string | null = null;
 
-	workspaceFolders?.forEach(async (folder) => {
+	for (const folder of workspaceFolders) {
 		let folderPath = URI.parse(folder.uri).fsPath
 		let fullPath = path.join(folderPath, pathToCheck);
 
 		if (await fileExists(fullPath)) {
 			resolvedPath = URI.file(fullPath).toString()
-			return;
+			break;
 		}
-	});
+	};
 
 	return resolvedPath;
 }
