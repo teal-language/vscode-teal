@@ -105,7 +105,10 @@ connection.onInitialize((params: InitializeParams) => {
 			definitionProvider: true,
 			typeDefinitionProvider: true,
 			textDocumentSync: TextDocumentSyncKind.Full,
-			hoverProvider: true
+			hoverProvider: true,
+			completionProvider: {
+				resolveProvider: false
+			}
 		}
 	};
 });
