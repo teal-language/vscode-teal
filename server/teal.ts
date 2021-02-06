@@ -4,8 +4,8 @@ type TypeId = number;
 type SymbolTuple = [number, number, string, TypeId];
 
 interface Symbol {
-    y: number,
-    x: number,
+    y?: number,
+    x?: number,
     identifier: string,
     typeId: TypeId
 };
@@ -26,7 +26,8 @@ type TypePositions = Record<string, Record<string, TypeId>>;
 interface TypeReport {
     symbols: SymbolTuple[],
     byPos: Record<FileName, TypePositions>,
-    types: Record<TypeId, TypeInfo>
+    types: Record<TypeId, TypeInfo>,
+    globals: Record<string, TypeId>
 };
 
 function le(vy: number, vx: number, y: number, x: number): boolean {
@@ -70,6 +71,15 @@ export function symbolsInScope(typeReport: TypeReport, y: number, x: number): Ar
     let result = new Array<Symbol>();
 
     let symIndex = find(typeReport.symbols, y, x);
+
+    const globals = typeReport.globals;
+
+    for (const [str, typeId] of Object.entries(globals)) {
+        result.push({
+            identifier: str,
+            typeId: typeId
+        });
+    }
 
     const symbols = typeReport.symbols;
 
