@@ -105,10 +105,7 @@ connection.onInitialize((params: InitializeParams) => {
 			definitionProvider: true,
 			typeDefinitionProvider: true,
 			textDocumentSync: TextDocumentSyncKind.Full,
-			hoverProvider: true,
-			completionProvider: {
-				resolveProvider: true
-			}
+			hoverProvider: true
 		}
 	};
 });
@@ -207,7 +204,12 @@ async function getTypeInfo(uri: string): Promise<TLTypesCommandResult | null> {
 		return null;
 	}
 
-	const json: any = JSON.parse(typesCmdResult.stdout);
+	try {
+		var json: any = JSON.parse(typesCmdResult.stdout);
+	} catch {
+		showErrorMessage("[Error]\n" + typesCmdResult.stderr);
+		return null;
+	};
 
 	const result = {
 		ioInfo: typesCmdResult,
@@ -367,6 +369,15 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	let checkResult = await runTLCommand(TLCommand.Check, textDocument.getText(), settings);
 
 	if (checkResult === null) {
+		connection.sendDiagnostics({ uri: textDocument.uri, diagnostics: [] });
+		return;
+	}
+
+	let crashPattern = /stack traceback:/gm;
+
+	if (crashPattern.exec(checkResult.stderr)) {
+		connection.sendDiagnostics({ uri: textDocument.uri, diagnostics: [] });
+		showErrorMessage("[Error]\n" + checkResult.stderr);
 		return;
 	}
 
@@ -468,8 +479,6 @@ async function autoComplete(textDocumentPositionParams: TextDocumentPositionPara
 
 	let symbols = symbolsInScope(typeInfo.json, position.line, position.character);
 
-	console.log(symbols);
-
 	for (const symbol of symbols) {
 		let typeDefinition: any | undefined = typeInfo.json?.["types"]?.[symbol.typeId];
 
@@ -501,19 +510,6 @@ async function autoComplete(textDocumentPositionParams: TextDocumentPositionPara
 }
 
 connection.onCompletion(autoComplete);
-
-// This handler resolves additional information for the item selected in
-// the completion list.
-connection.onCompletionResolve(
-	(item: CompletionItem): CompletionItem => {
-		if (item.data === 0) {
-			item.detail = 'Built-in type';
-			item.documentation = 'Built-in type';
-		}
-
-		return item;
-	}
-);
 
 const identifierRegex = /[a-zA-Z0-9_]/;
 
