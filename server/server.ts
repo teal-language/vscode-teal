@@ -57,7 +57,7 @@ interface TLTypesCommandResult {
 }
 
 interface TLTypeInfo {
-	location: Location,
+	location: Location | null,
 	name: string
 };
 
@@ -593,29 +593,29 @@ async function getTypeInfoAtPosition(textDocumentIdentifier: TextDocumentIdentif
 		return null;
 	}
 
+	let destinationLocation: Location | null = null;
+
 	let destinationY = typeDefinition["y"];
 	let destinationX = typeDefinition["x"];
 
-	if (destinationY === undefined || destinationX == undefined) {
-		return null;
-	}
+	if (destinationY !== undefined && destinationX !== undefined) {
+		let destinationRange = Range.create(destinationY - 1, destinationX - 1, destinationY - 1, destinationX - 1);
 
-	let typeFile: string | undefined = typeDefinition["file"];
+		let typeFile: string | undefined = typeDefinition["file"];
 
-	if (typeFile === undefined) {
-		typeFile = tmpPath;
-	}
+		if (typeFile === undefined) {
+			typeFile = tmpPath;
+		}
 
-	let destinationRange = Range.create(destinationY - 1, destinationX - 1, destinationY - 1, destinationX - 1);
+		let destinationUri: string | null = await pathInWorkspace(textDocument, typeFile);
 
-	let destinationUri: string | null = await pathInWorkspace(textDocument, typeFile);
-
-	if (destinationUri === null) {
-		return null;
+		if (destinationUri !== null) {
+			destinationLocation = Location.create(destinationUri, destinationRange);
+		}
 	}
 
 	return {
-		location: Location.create(destinationUri, destinationRange),
+		location: destinationLocation,
 		name: typeName
 	}
 }
