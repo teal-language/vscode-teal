@@ -186,13 +186,32 @@ function getDocumentSettings(uri: string): Thenable<TealServerSettings> {
 	return result;
 }
 
-async function getTypeInfo(uri: string): Promise<TLTypesCommandResult | null> {
-	const cachedResult = typesCommandCache.get(uri);
+/**
+ * Based on https://remysharp.com/2010/07/21/throttling-function-calls
+ */
+function throttle(threshold: number, fn: Function): any {
+	var last: number;
+	var deferTimer: NodeJS.Timeout;
 
-	if (cachedResult !== undefined) {
-		return cachedResult;
-	}
+	return function (...args: any) {
+		var now = + new Date;
 
+		if (last && now < last + threshold) {
+			console.log("Not ready yet!");
+			clearTimeout(deferTimer);
+
+			deferTimer = setTimeout(function () {
+				last = now;
+				fn(...args);
+			}, threshold);
+		} else {
+			last = now;
+			fn(...args);
+		}
+	};
+}
+
+async function _feedTypeInfoCache(uri: string) {
 	const textDocument = documents.get(uri);
 
 	if (textDocument === undefined) {
@@ -220,8 +239,22 @@ async function getTypeInfo(uri: string): Promise<TLTypesCommandResult | null> {
 	};
 
 	typesCommandCache.set(uri, result);
+}
 
-	return result;
+let _feedTypeInfoCacheThrottle = throttle(2000, _feedTypeInfoCache);
+
+let feedTypeInfoCache = (uri: string) => {
+	_feedTypeInfoCacheThrottle(uri);
+}
+
+function getTypeInfoFromCache(uri: string): TLTypesCommandResult | null {
+	const cachedResult = typesCommandCache.get(uri);
+
+	if (cachedResult === undefined) {
+		return null;
+	}
+
+	return cachedResult;
 }
 
 // Only keep caches for open documents
@@ -238,17 +271,20 @@ async function showErrorMessage(message: string, ...actions: MessageActionItem[]
 
 // The content of a text document has changed. This event is emitted
 // when the text document first opened or when its content has changed.
-documents.onDidChangeContent(change => {
+documents.onDidChangeContent(async change => {
 	validateTextDocument(change.document);
 
-	// Make sure we get the latest 'tl types' data
-	typesCommandCache.delete(change.document.uri);
+	// Put new `tl types` data in cache
+	feedTypeInfoCache(change.document.uri);
 });
 
 // Monitored files have changed in VS Code
-connection.onDidChangeWatchedFiles(_change => {
+connection.onDidChangeWatchedFiles(async _change => {
 	for (let x of documents.all()) {
 		validateTextDocument(x);
+
+		// Put new `tl types` data in cache
+		feedTypeInfoCache(x.uri);
 	}
 });
 
@@ -450,7 +486,7 @@ async function autoComplete(textDocumentPositionParams: TextDocumentPositionPara
 
 	const position = textDocumentPositionParams.position;
 
-	const typeInfo = await getTypeInfo(textDocument.uri);
+	const typeInfo = getTypeInfoFromCache(textDocument.uri);
 
 	if (typeInfo === null) {
 		return [];
@@ -546,7 +582,7 @@ async function getTypeInfoAtPosition(textDocumentIdentifier: TextDocumentIdentif
 		return null;
 	}
 
-	const typeInfo = await getTypeInfo(textDocumentIdentifier.uri);
+	const typeInfo = getTypeInfoFromCache(textDocumentIdentifier.uri);
 
 	if (typeInfo === null) {
 		return null;
