@@ -574,7 +574,7 @@ async function getTypeInfoAtPosition(textDocumentIdentifier: TextDocumentIdentif
 		return null;
 	}
 
-	let typeName = typeDefinition["str"];
+	let typeName: string | undefined = typeDefinition["str"];
 
 	let typeRef: string | undefined = typeDefinition["ref"];
 
@@ -582,10 +582,16 @@ async function getTypeInfoAtPosition(textDocumentIdentifier: TextDocumentIdentif
 		typeDefinition = typesJson["types"][typeRef];
 
 		if (typeDefinition["str"] === "type record" && typeName !== undefined) {
+			// record
 			typeName = "record " + typeName;
 		}
+		else if (typeDefinition["enums"] !== undefined) {
+			// enum
+			typeName = typeDefinition["str"].replace(/^type /, "enum ");
+		}
 		else {
-			typeName = typeDefinition["str"];
+			// `type`
+			typeName = `type ${typeName} = ${typeDefinition["str"].replace(/^type /, "")}`;
 		}
 	}
 
