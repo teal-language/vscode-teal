@@ -197,7 +197,6 @@ function throttle(threshold: number, fn: Function): any {
 		var now = + new Date;
 
 		if (last && now < last + threshold) {
-			console.log("Not ready yet!");
 			clearTimeout(deferTimer);
 
 			deferTimer = setTimeout(function () {
@@ -241,7 +240,7 @@ async function _feedTypeInfoCache(uri: string) {
 	typesCommandCache.set(uri, result);
 }
 
-let _feedTypeInfoCacheThrottle = throttle(2000, _feedTypeInfoCache);
+let _feedTypeInfoCacheThrottle = throttle(1000, _feedTypeInfoCache);
 
 let feedTypeInfoCache = (uri: string) => {
 	_feedTypeInfoCacheThrottle(uri);
@@ -271,7 +270,7 @@ async function showErrorMessage(message: string, ...actions: MessageActionItem[]
 
 // The content of a text document has changed. This event is emitted
 // when the text document first opened or when its content has changed.
-documents.onDidChangeContent(async change => {
+documents.onDidChangeContent(change => {
 	validateTextDocument(change.document);
 
 	// Put new `tl types` data in cache
@@ -279,7 +278,7 @@ documents.onDidChangeContent(async change => {
 });
 
 // Monitored files have changed in VS Code
-connection.onDidChangeWatchedFiles(async _change => {
+connection.onDidChangeWatchedFiles(_change => {
 	for (let x of documents.all()) {
 		validateTextDocument(x);
 
