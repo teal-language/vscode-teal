@@ -6,7 +6,7 @@ Provides error checking and syntax highlighting for [Teal](https://github.com/te
 
 ## Requirements
 
-Make sure that the Teal compiler is available in your PATH:
+Make sure that the Teal compiler (v0.11.0 or later) is available in your PATH:
 ```
 luarocks install tl
 ```
@@ -30,7 +30,7 @@ genu | Global enum definition | global enum name ... end
 
 ## FAQ
 
-### The module search path is wrong!
+### 'Module not found' errors
 
 By default, this extension runs `tl check` at the root of the workspace.
 
@@ -43,6 +43,10 @@ return {
     }
 }
 ```
+
+### [Error] messages at the bottom right of the screen
+
+Make sure you are using the latest version of the `tl` compiler. If upgrading `tl` does not fix the problem, then please [create an issue](https://github.com/teal-language/vscode-teal/issues/new).
 
 ## Changelog
 
