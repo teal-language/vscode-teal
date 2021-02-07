@@ -43,14 +43,15 @@ import { spawn } from 'child_process';
 import { symbolsInScope } from './teal';
 
 interface TLCommandIOInfo {
-	filePath: string,
+	filePath: string | null,
 	stdout: string,
 	stderr: string
 };
 
 enum TLCommand {
 	Check = "check",
-	Types = "types"
+	Types = "types",
+	Version = "--version"
 };
 
 interface TLTypesCommandResult {
@@ -157,7 +158,23 @@ let settingsCache: Map<string, Thenable<TealServerSettings>> = new Map();
 // Cache "tl types" queries of all open documents
 let typesCommandCache: Map<string, TLTypesCommandResult> = new Map();
 
-connection.onDidChangeConfiguration(change => {
+
+async function verifyMinimumTLVersion(settings: TealServerSettings) {
+	console.log("Veryfing minimum tl version...");
+
+	const tlVersion = await getTLVersion(settings);
+
+	if (tlVersion !== null) {
+		if (tlVersion.major === 0 && tlVersion.minor < 11) {
+			showErrorMessage("[Warning]\n" + "You are using an outdated version of the tl compiler. Please upgrade tl to v0.11.0 or later.");
+			return null;
+		}
+	} else {
+		console.log("version is null");
+	}
+}
+
+connection.onDidChangeConfiguration((change) => {
 	if (hasConfigurationCapability) {
 		// Reset all cached document settings
 		settingsCache.clear();
@@ -168,7 +185,12 @@ connection.onDidChangeConfiguration(change => {
 	}
 
 	// Revalidate all open text documents
-	documents.all().forEach(validateTextDocument);
+	documents.all().forEach(async function (x: TextDocument) {
+		const settings = await getDocumentSettings(x.uri);
+
+		verifyMinimumTLVersion(settings);
+		validateTextDocument(x);
+	});
 
 	typesCommandCache.clear();
 });
@@ -216,6 +238,32 @@ function throttle(threshold: number, fn: Function): any {
 	};
 }
 
+interface MajorMinorPatch {
+	major: number,
+	minor: number,
+	patch: number
+}
+
+async function getTLVersion(settings: TealServerSettings): Promise<MajorMinorPatch | null> {
+	const commandResult = await runTLCommand(TLCommand.Version, null, settings);
+
+	const majorMinorPatch = commandResult.stdout.match(/(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)/);
+
+	console.log(commandResult.stdout);
+
+	if (majorMinorPatch === null) {
+		return null;
+	}
+
+	const groups = majorMinorPatch.groups!;
+
+	return {
+		major: Number.parseInt(groups.major),
+		minor: Number.parseInt(groups.minor),
+		patch: Number.parseInt(groups.patch)
+	};
+}
+
 async function _feedTypeInfoCache(uri: string) {
 	const textDocument = documents.get(uri);
 
@@ -225,7 +273,7 @@ async function _feedTypeInfoCache(uri: string) {
 
 	const settings = await getDocumentSettings(textDocument.uri);
 
-	const typesCmdResult = await runTLCommand(TLCommand.Types, textDocument.getText(), settings);
+	const typesCmdResult = await runTLCommandOnText(TLCommand.Types, textDocument.getText(), settings);
 
 	if (typesCmdResult === null) {
 		return null;
@@ -261,6 +309,12 @@ function getTypeInfoFromCache(uri: string): TLTypesCommandResult | null {
 
 	return cachedResult;
 }
+
+documents.onDidOpen(async (e) => {
+	const settings = await getDocumentSettings(e.document.uri);
+
+	verifyMinimumTLVersion(settings);
+});
 
 // Only keep caches for open documents
 documents.onDidClose(e => {
@@ -342,13 +396,13 @@ async function pathInWorkspace(textDocument: TextDocument, pathToCheck: string):
 /**
  * Runs a `tl` command on a specific text.
  */
-async function runTLCommand(command: TLCommand, text: string, settings: TealServerSettings): Promise<TLCommandIOInfo | null> {
+async function runTLCommandOnText(command: TLCommand, text: string, settings: TealServerSettings): Promise<TLCommandIOInfo | null> {
 	try {
 		return await withFile(async ({ path, fd }) => {
 			await write(fd, text);
 
 			try {
-				let result = await _runTLCommand(command, path, settings);
+				let result = await runTLCommand(command, path, settings);
 				return result;
 			} catch (error) {
 				throw error;
@@ -360,7 +414,7 @@ async function runTLCommand(command: TLCommand, text: string, settings: TealServ
 	}
 }
 
-async function _runTLCommand(command: TLCommand, filePath: string, settings: TealServerSettings): Promise<TLCommandIOInfo> {
+async function runTLCommand(command: TLCommand, filePath: string | null, settings: TealServerSettings): Promise<TLCommandIOInfo> {
 	let child: any;
 
 	let platform = process.platform;
@@ -368,9 +422,21 @@ async function _runTLCommand(command: TLCommand, filePath: string, settings: Tea
 	const compilerPath = getCompilerPath(settings);
 
 	if (platform == "win32") {
-		child = spawn('cmd.exe', ['/c', compilerPath, "-q", command, filePath]);
+		let args = ['/c', compilerPath, "-q", command];
+
+		if (filePath !== null) {
+			args.push(filePath);
+		}
+
+		child = spawn('cmd.exe', args);
 	} else {
-		child = spawn(compilerPath, ["-q", command, filePath]);
+		let args = ["-q", command];
+
+		if (filePath !== null) {
+			args.push(filePath);
+		}
+
+		child = spawn(compilerPath, args);
 	}
 
 	return await new Promise(async function (resolve, reject) {
@@ -410,7 +476,7 @@ async function _runTLCommand(command: TLCommand, filePath: string, settings: Tea
 async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	let settings = await getDocumentSettings(textDocument.uri);
 
-	let checkResult = await runTLCommand(TLCommand.Check, textDocument.getText(), settings);
+	let checkResult = await runTLCommandOnText(TLCommand.Check, textDocument.getText(), settings);
 
 	if (checkResult === null) {
 		connection.sendDiagnostics({ uri: textDocument.uri, diagnostics: [] });
@@ -629,7 +695,7 @@ async function getTypeInfoAtPosition(textDocumentIdentifier: TextDocumentIdentif
 		return null;
 	}
 
-	const tmpPath = typeInfo.ioInfo.filePath;
+	const tmpPath = typeInfo.ioInfo.filePath!;
 	const typesJson = typeInfo.json;
 
 	let wordRange = getWordRangeAtPosition(textDocument, position);
