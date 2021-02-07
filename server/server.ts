@@ -187,7 +187,7 @@ function getDocumentSettings(uri: string): Thenable<TealServerSettings> {
 }
 
 /**
- * Based on https://remysharp.com/2010/07/21/throttling-function-calls
+ * Based on https://remysharp.com/2010/07/21/throttling-function-calls (MIT license)
  */
 function throttle(threshold: number, fn: Function): any {
 	var last: number;
@@ -491,29 +491,42 @@ async function autoComplete(textDocumentPositionParams: TextDocumentPositionPara
 		return [];
 	}
 
-	// Built-in types
+	function makeBasicItem(str: string) {
+		return {
+			label: str,
+			kind: CompletionItemKind.Keyword
+		};
+	}
+
+	// Built-in types and keywords
 	let result: CompletionItem[] = [
-		{
-			label: 'any',
-			kind: CompletionItemKind.Keyword,
-			data: -1
-		},
-		{
-			label: 'number',
-			kind: CompletionItemKind.Keyword,
-			data: -2
-		},
-		{
-			label: 'string',
-			kind: CompletionItemKind.Keyword,
-			data: -3
-		},
-		{
-			label: 'boolean',
-			kind: CompletionItemKind.Keyword,
-			data: -4
-		}
-	];
+		"any",
+		"number",
+		"string",
+		"boolean",
+		"thread",
+		"nil",
+		"break",
+		"goto",
+		"do",
+		"end",
+		"while",
+		"repeat",
+		"until",
+		"if",
+		"then",
+		"elseif",
+		"else",
+		"for",
+		"in",
+		"function",
+		"local",
+		"global",
+		"record",
+		"enum",
+		"type",
+		"userdata"
+	].map(x => makeBasicItem(x));
 
 	let symbols = symbolsInScope(typeInfo.json, position.line, position.character);
 
