@@ -600,7 +600,7 @@ async function autoComplete(textDocumentPositionParams: TextDocumentPositionPara
 		"userdata"
 	].map(x => makeBasicItem(x));
 
-	let symbols = symbolsInScope(typeInfo.json, position.line, position.character);
+	let symbols = symbolsInScope(typeInfo.json, position.line + 1, position.character + 1);
 
 	for (const symbol of symbols) {
 		let typeDefinition: any | undefined = typeInfo.json?.["types"]?.[symbol.typeId];
