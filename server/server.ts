@@ -28,7 +28,9 @@ import {
 	TextDocumentIdentifier,
 	Definition,
 	Position,
-	MarkupKind
+	MarkupKind,
+	CancellationToken,
+	SignatureHelp
 } from 'vscode-languageserver/node';
 
 import { TextDocument } from 'vscode-languageserver-textdocument';
@@ -106,9 +108,13 @@ connection.onInitialize((params: InitializeParams) => {
 			typeDefinitionProvider: true,
 			textDocumentSync: TextDocumentSyncKind.Full,
 			hoverProvider: true,
+			signatureHelpProvider: {
+				triggerCharacters: ["("],
+				retriggerCharacters: [","]
+			},
 			completionProvider: {
 				resolveProvider: false
-			}
+			},
 		}
 	};
 });
@@ -561,6 +567,29 @@ async function autoComplete(textDocumentPositionParams: TextDocumentPositionPara
 }
 
 connection.onCompletion(autoComplete);
+
+async function signatureHelp(textDocumentPosition: TextDocumentPositionParams, token: CancellationToken): Promise<SignatureHelp | null> {
+	// TODO
+	return null;
+
+	const document: TextDocument | undefined = documents.get(textDocumentPosition.textDocument.uri);
+
+	if (document === undefined) {
+		return null;
+	}
+
+	return {
+		signatures: [
+			{
+				label: "This is a test"
+			}
+		],
+		activeParameter: null,
+		activeSignature: 0,
+	};
+};
+
+connection.onSignatureHelp(signatureHelp);
 
 const identifierRegex = /[a-zA-Z0-9_]/;
 
