@@ -1,3 +1,7 @@
+### 0.6.1 - February 07 2021
+
+The extension now displays a warning when `tl --version` < 0.11.0.
+
 ### 0.6.0 - February 07 2021
 
 The extension now has basic support for the following LSP features:
