@@ -165,12 +165,14 @@ async function verifyMinimumTLVersion(settings: TealServerSettings) {
 	const tlVersion = await getTLVersion(settings);
 
 	if (tlVersion !== null) {
+		console.log(`tl version: ${tlVersion.major}.${tlVersion.minor}.${tlVersion.patch}`);
+
 		if (tlVersion.major === 0 && tlVersion.minor < 11) {
 			showErrorMessage("[Warning]\n" + "You are using an outdated version of the tl compiler. Please upgrade tl to v0.11.0 or later.");
 			return null;
 		}
 	} else {
-		console.log("version is null");
+		console.log("[Warning] tl version is null");
 	}
 }
 
@@ -248,8 +250,6 @@ async function getTLVersion(settings: TealServerSettings): Promise<MajorMinorPat
 	const commandResult = await runTLCommand(TLCommand.Version, null, settings);
 
 	const majorMinorPatch = commandResult.stdout.match(/(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)/);
-
-	console.log(commandResult.stdout);
 
 	if (majorMinorPatch === null) {
 		return null;
