@@ -163,8 +163,6 @@ let typesCommandCache: Map<string, TLTypesCommandResult> = new Map();
 
 
 async function verifyMinimumTLVersion(settings: TealServerSettings) {
-	console.log("Veryfing minimum tl version...");
-
 	const tlVersion = await getTLVersion(settings);
 
 	if (tlVersion !== null) {
