@@ -107,7 +107,10 @@ connection.onInitialize((params: InitializeParams) => {
 		capabilities: {
 			definitionProvider: true,
 			typeDefinitionProvider: true,
-			textDocumentSync: TextDocumentSyncKind.Full,
+			textDocumentSync: {
+				openClose: true,
+				change: TextDocumentSyncKind.Incremental
+			},
 			hoverProvider: true,
 			signatureHelpProvider: {
 				triggerCharacters: ["("],
