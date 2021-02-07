@@ -1,3 +1,11 @@
+### 0.6.0 - February 07 2021
+
+The extension now has basic support for the following LSP features:
+
+- Go to type definition
+- Show type on mouse hover
+- Simple auto-completion (very early stage!)
+
 ### 0.5.4 - February 02 2021
 
 Fix another bug which would cause method calls to be highlighted as type annotations
