@@ -216,14 +216,28 @@ function getDocumentSettings(uri: string): Thenable<TealServerSettings> {
 	return result;
 }
 
-type ThrottledFunction = (arg: string) => void;
-
-function throttle(threshold: number, fn: (arg: string) => void): ThrottledFunction {
-	let deferTimers: Record<any, NodeJS.Timeout> = {};
+function debounce(threshold: number, fn: (arg: string) => void): (arg: string) => void {
+	let deferTimers: Record<string, NodeJS.Timeout> = {};
 
 	return function (arg: string) {
 		clearTimeout(deferTimers[arg]);
-		deferTimers[arg] = setTimeout(() => fn(arg), threshold);
+		deferTimers[arg] = setTimeout(fn, threshold, arg);
+	};
+}
+
+function throttle(threshold: number, fn: (arg: string) => void): (arg: string) => void {
+	let lasts: Record<string, number> = {};
+
+	return function (arg: string) {
+		let now = new Date().getTime();
+
+		if (lasts[arg] !== undefined && now < lasts[arg] + threshold) {
+			return;
+		}
+
+		lasts[arg] = now;
+
+		setTimeout(fn, threshold, arg);
 	};
 }
 
@@ -260,7 +274,9 @@ async function _feedTypeInfoCache(uri: string) {
 
 	const settings = await getDocumentSettings(textDocument.uri);
 
-	const typesCmdResult = await runTLCommandOnText(TLCommand.Types, textDocument.getText(), settings);
+	const documentText = textDocument.getText();
+
+	const typesCmdResult = await runTLCommandOnText(TLCommand.Types, documentText, settings);
 
 	if (typesCmdResult === null) {
 		return null;
@@ -537,7 +553,7 @@ async function _validateTextDocument(uri: string): Promise<void> {
 	}
 }
 
-const validateTextDocument = throttle(500, _validateTextDocument);
+const validateTextDocument = debounce(500, _validateTextDocument);
 
 async function autoComplete(textDocumentPositionParams: TextDocumentPositionParams): Promise<CompletionItem[]> {
 	let textDocument = documents.get(textDocumentPositionParams.textDocument.uri);
