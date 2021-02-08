@@ -161,7 +161,6 @@ let settingsCache: Map<string, Thenable<TealServerSettings>> = new Map();
 // Cache "tl types" queries of all open documents
 let typesCommandCache: Map<string, TLTypesCommandResult> = new Map();
 
-
 async function verifyMinimumTLVersion(settings: TealServerSettings) {
 	const tlVersion = await getTLVersion(settings);
 
@@ -192,7 +191,7 @@ connection.onDidChangeConfiguration((change) => {
 		const settings = await getDocumentSettings(x.uri);
 
 		verifyMinimumTLVersion(settings);
-		validateTextDocument(x);
+		validateTextDocument(x.uri);
 	});
 
 	typesCommandCache.clear();
@@ -217,27 +216,14 @@ function getDocumentSettings(uri: string): Thenable<TealServerSettings> {
 	return result;
 }
 
-/**
- * Based on https://remysharp.com/2010/07/21/throttling-function-calls (MIT license)
- */
-function throttle(threshold: number, fn: Function): any {
-	var last: number;
-	var deferTimer: NodeJS.Timeout;
+type ThrottledFunction = (arg: string) => void;
 
-	return function (...args: any) {
-		var now = + new Date;
+function throttle(threshold: number, fn: (arg: string) => void): ThrottledFunction {
+	let deferTimers: Record<any, NodeJS.Timeout> = {};
 
-		if (last && now < last + threshold) {
-			clearTimeout(deferTimer);
-
-			deferTimer = setTimeout(function () {
-				last = now;
-				fn(...args);
-			}, threshold);
-		} else {
-			last = now;
-			fn(...args);
-		}
+	return function (arg: string) {
+		clearTimeout(deferTimers[arg]);
+		deferTimers[arg] = setTimeout(() => fn(arg), threshold);
 	};
 }
 
@@ -295,11 +281,7 @@ async function _feedTypeInfoCache(uri: string) {
 	typesCommandCache.set(uri, result);
 }
 
-let _feedTypeInfoCacheThrottle = throttle(1000, _feedTypeInfoCache);
-
-let feedTypeInfoCache = (uri: string) => {
-	_feedTypeInfoCacheThrottle(uri);
-}
+const feedTypeInfoCache = throttle(500, _feedTypeInfoCache);
 
 function getTypeInfoFromCache(uri: string): TLTypesCommandResult | null {
 	const cachedResult = typesCommandCache.get(uri);
@@ -332,7 +314,7 @@ async function showErrorMessage(message: string, ...actions: MessageActionItem[]
 // The content of a text document has changed. This event is emitted
 // when the text document first opened or when its content has changed.
 documents.onDidChangeContent(change => {
-	validateTextDocument(change.document);
+	validateTextDocument(change.document.uri);
 
 	// Put new `tl types` data in cache
 	feedTypeInfoCache(change.document.uri);
@@ -341,7 +323,7 @@ documents.onDidChangeContent(change => {
 // Monitored files have changed in VS Code
 connection.onDidChangeWatchedFiles(_change => {
 	for (let x of documents.all()) {
-		validateTextDocument(x);
+		validateTextDocument(x.uri);
 
 		// Put new `tl types` data in cache
 		feedTypeInfoCache(x.uri);
@@ -474,7 +456,13 @@ async function runTLCommand(command: TLCommand, filePath: string | null, setting
 	});
 }
 
-async function validateTextDocument(textDocument: TextDocument): Promise<void> {
+async function _validateTextDocument(uri: string): Promise<void> {
+	const textDocument: TextDocument | undefined = documents.get(uri);
+
+	if (textDocument === undefined) {
+		return;
+	}
+
 	let settings = await getDocumentSettings(textDocument.uri);
 
 	let checkResult = await runTLCommandOnText(TLCommand.Check, textDocument.getText(), settings);
@@ -548,6 +536,8 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 		connection.sendDiagnostics({ uri: uri, diagnostics: diagnostics });
 	}
 }
+
+const validateTextDocument = throttle(500, _validateTextDocument);
 
 async function autoComplete(textDocumentPositionParams: TextDocumentPositionParams): Promise<CompletionItem[]> {
 	let textDocument = documents.get(textDocumentPositionParams.textDocument.uri);
