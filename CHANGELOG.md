@@ -1,3 +1,8 @@
+### 0.6.2 - February 08 2021
+
+- Optimize for lower CPU usage
+- Fix an off-by-one error which would cause some symbols not to appear in the suggestions
+
 ### 0.6.1 - February 07 2021
 
 The extension now displays a warning when `tl --version` < 0.11.0.
