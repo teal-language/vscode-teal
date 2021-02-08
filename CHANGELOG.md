@@ -1,3 +1,7 @@
+### 0.6.3 - February 08 2021
+
+Get rid of `Teal > Compiler Path` setting, as it was misleading and caused some issues (for instance, `LUA_PATH` could take precedence over this setting)
+
 ### 0.6.2 - February 08 2021
 
 - Optimize for lower CPU usage
