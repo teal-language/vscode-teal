@@ -136,22 +136,12 @@ connection.onInitialized(() => {
 	}
 });
 
-interface TealServerSettings {
-	compilerPath: {
-		unix: string,
-		windows: string
-	}
-};
+interface TealServerSettings {};
 
 // The global settings, used when the `workspace/configuration` request is not supported by the client.
 // Please note that this is not the case when using this server with the client provided in this example
 // but could happen with other clients.
-const defaultSettings: TealServerSettings = {
-	compilerPath: {
-		unix: "tl",
-		windows: "tl.bat"
-	}
-};
+const defaultSettings: TealServerSettings = {};
 
 let globalSettings: TealServerSettings = defaultSettings;
 
@@ -348,22 +338,6 @@ connection.onDidChangeWatchedFiles(_change => {
 
 class TLNotFoundError extends Error { /* ... */ }
 
-function getDefaultCompilerPath() {
-	if (process.platform === "win32") {
-		return defaultSettings.compilerPath.windows;
-	} else {
-		return defaultSettings.compilerPath.unix;
-	}
-}
-
-function getCompilerPath(settings: TealServerSettings) {
-	if (process.platform === "win32") {
-		return settings.compilerPath.windows;
-	} else {
-		return settings.compilerPath.unix;
-	}
-}
-
 const tmpBufferPrefix = "__tl__tmp__check-";
 
 async function pathInWorkspace(textDocument: TextDocument, pathToCheck: string): Promise<string | null> {
@@ -418,10 +392,8 @@ async function runTLCommand(command: TLCommand, filePath: string | null, setting
 
 	let platform = process.platform;
 
-	const compilerPath = getCompilerPath(settings);
-
 	if (platform == "win32") {
-		let args = ['/c', compilerPath, "-q", command];
+		let args = ['/c', "tl.bat", "-q", command];
 
 		if (filePath !== null) {
 			args.push(filePath);
@@ -435,7 +407,7 @@ async function runTLCommand(command: TLCommand, filePath: string | null, setting
 			args.push(filePath);
 		}
 
-		child = spawn(compilerPath, args);
+		child = spawn("tl", args);
 	}
 
 	return await new Promise(async function (resolve, reject) {
@@ -444,14 +416,7 @@ async function runTLCommand(command: TLCommand, filePath: string | null, setting
 
 		child.on('error', function (error: any) {
 			if (error.code === 'ENOENT') {
-				let errorMessage = "Could not find the tl executable. Please make sure that it is available in the PATH, or set the \"Teal > Compiler Path\" setting to the correct value.";
-
-				const compilerPathIsCustom = compilerPath !== getDefaultCompilerPath();
-
-				if (compilerPathIsCustom) {
-					errorMessage = "Could not find the tl executable. Please make sure that the \"Teal > Compiler Path\" setting is correct.";
-				}
-
+				let errorMessage = "Could not find the tl executable. Please make sure that it is available in the PATH.";
 				reject(new TLNotFoundError(errorMessage));
 			} else {
 				reject(error);
