@@ -215,19 +215,40 @@ function debounce(threshold: number, fn: (arg: string) => void): (arg: string) =
 	};
 }
 
-function throttle(threshold: number, fn: (arg: string) => void): (arg: string) => void {
-	let lasts: Record<string, number> = {};
+function throttle(threshold: number, fn: (arg: string) => Promise<null | undefined>): (arg: string) => void {
+	let running: Record<string, boolean> = {};
+	let retrigger: Record<string, boolean> = {};
 
-	return function (arg: string) {
-		let now = new Date().getTime();
-
-		if (lasts[arg] !== undefined && now < lasts[arg] + threshold) {
+	return function callback(arg: string) {
+		if (running[arg]) {
+			retrigger[arg] = true;
 			return;
 		}
 
-		lasts[arg] = now;
+		running[arg] = true;
+		retrigger[arg] = false;
 
-		setTimeout(fn, threshold, arg);
+		const beforeCall = new Date().getTime();
+
+		fn(arg).then(() => {
+			const afterCall = new Date().getTime();
+
+			const waitTime = Math.max(0, threshold - (afterCall - beforeCall));
+
+			const postCall = function () {
+				running[arg] = false;
+
+				if (retrigger[arg]) {
+					callback(arg);
+				}
+			}
+
+			if (waitTime === 0) {
+				postCall();
+			} else {
+				setTimeout(postCall, waitTime);
+			}
+		});
 	};
 }
 
@@ -297,7 +318,7 @@ async function _feedTypeInfoCache(uri: string) {
 	typesCommandCache.set(uri, result);
 }
 
-const feedTypeInfoCache = throttle(500, _feedTypeInfoCache);
+const feedTypeInfoCache = throttle(250, _feedTypeInfoCache);
 
 function getTypeInfoFromCache(uri: string): TLTypesCommandResult | null {
 	const cachedResult = typesCommandCache.get(uri);
