@@ -136,7 +136,7 @@ connection.onInitialized(() => {
 	}
 });
 
-interface TealServerSettings {};
+interface TealServerSettings { };
 
 // The global settings, used when the `workspace/configuration` request is not supported by the client.
 // Please note that this is not the case when using this server with the client provided in this example
@@ -255,6 +255,10 @@ async function getTLVersion(settings: TealServerSettings): Promise<MajorMinorPat
 	};
 }
 
+function isEmptyOrSpaces(str: string) {
+	return (str == null || str.trim() === '');
+}
+
 async function _feedTypeInfoCache(uri: string) {
 	const textDocument = documents.get(uri);
 
@@ -272,10 +276,16 @@ async function _feedTypeInfoCache(uri: string) {
 		return null;
 	}
 
+	if (isEmptyOrSpaces(typesCmdResult.stdout)) {
+		showErrorMessage("[Error]\n" + "`tl types` has returned an empty response.");
+		return null;
+	}
+
 	try {
 		var json: any = JSON.parse(typesCmdResult.stdout);
 	} catch {
-		showErrorMessage("[Error]\n" + typesCmdResult.stderr);
+		console.log(typesCmdResult.stderr);
+		showErrorMessage("[Error]\n" + "`tl types` has returned an invalid JSON response.");
 		return null;
 	};
 
@@ -453,9 +463,9 @@ async function _validateTextDocument(uri: string): Promise<void> {
 		return;
 	}
 
-	let crashPattern = /stack traceback:/gm;
+	let crashPattern = /stack traceback:/m;
 
-	if (crashPattern.exec(checkResult.stderr)) {
+	if (crashPattern.test(checkResult.stderr)) {
 		connection.sendDiagnostics({ uri: textDocument.uri, diagnostics: [] });
 		showErrorMessage("[Error]\n" + checkResult.stderr);
 		return;
@@ -639,15 +649,15 @@ function getWordRangeAtPosition(document: TextDocument, position: Position): Ran
 	let end = position.character;
 
 	// Make sure the cursor is on an identifier
-	if (!identifierRegex.exec(str[start])) {
+	if (!identifierRegex.test(str[start])) {
 		return null;
 	}
 
-	while (start > 0 && identifierRegex.exec(str[start - 1])) {
+	while (start > 0 && identifierRegex.test(str[start - 1])) {
 		start--;
 	}
 
-	while (end < str.length - 1 && identifierRegex.exec(str[end + 1])) {
+	while (end < str.length - 1 && identifierRegex.test(str[end + 1])) {
 		end++;
 	}
 
