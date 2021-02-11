@@ -69,7 +69,7 @@
     "scripts": {
         "package": "vsce package",
         "vscode:prepublish": "npm run build",
-        "build": "tsc -b",
+        "build": "tsc -b && tree-sitter build-wasm node_modules/tree-sitter-teal && node postbuild.js",
         "watch": "tsc -b -w"
     }
 }
