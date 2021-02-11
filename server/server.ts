@@ -5,7 +5,6 @@
 
 import {
 	createConnection,
-	TextDocuments,
 	Diagnostic,
 	DiagnosticSeverity,
 	ProposedFeatures,
@@ -20,20 +19,16 @@ import {
 	ShowMessageRequestParams,
 	MessageType,
 	ShowMessageRequest,
-	VersionedTextDocumentIdentifier,
-	WorkspaceFolder,
-	WorkspaceFoldersRequest,
-	FormattingOptions,
 	Location,
 	TextDocumentIdentifier,
-	Definition,
 	Position,
 	MarkupKind,
 	CancellationToken,
-	SignatureHelp
+	SignatureHelp,
+	ParameterInformation,
+	SignatureInformation
 } from 'vscode-languageserver/node';
 
-import { TextDocument } from 'vscode-languageserver-textdocument';
 import { URI } from 'vscode-uri';
 import { withFile } from 'tmp-promise'
 import path = require('path');
@@ -41,6 +36,8 @@ import { access as fsAccess, constants as fsConstants } from 'fs';
 import util = require("util");
 import { spawn } from 'child_process';
 import { symbolsInScope } from './teal';
+import { pointToPosition, TreeSitterDocument } from './tree-sitter-document'
+import { SyntaxNode } from 'web-tree-sitter';
 
 interface TLCommandIOInfo {
 	filePath: string | null,
@@ -74,7 +71,7 @@ function fileExists(filePath: string): Promise<boolean> {
 
 const write = util.promisify(require("fs").write);
 
-const documents = new TextDocuments(TextDocument);
+const documents: Map<string, TreeSitterDocument> = new Map();
 
 // Create a connection for the server. The connection uses Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -113,8 +110,7 @@ connection.onInitialize((params: InitializeParams) => {
 			},
 			hoverProvider: true,
 			signatureHelpProvider: {
-				triggerCharacters: ["("],
-				retriggerCharacters: [","]
+				triggerCharacters: ["(", ","]
 			},
 			completionProvider: {
 				resolveProvider: false
@@ -177,7 +173,7 @@ connection.onDidChangeConfiguration((change) => {
 	}
 
 	// Revalidate all open text documents
-	documents.all().forEach(async function (x: TextDocument) {
+	documents.forEach(async function (x: TreeSitterDocument) {
 		const settings = await getDocumentSettings(x.uri);
 
 		verifyMinimumTLVersion(settings);
@@ -330,16 +326,46 @@ function getTypeInfoFromCache(uri: string): TLTypesCommandResult | null {
 	return cachedResult;
 }
 
-documents.onDidOpen(async (e) => {
-	const settings = await getDocumentSettings(e.document.uri);
+connection.onDidOpenTextDocument(async (params) => {
+	// A text document got opened in VS Code.
+	// params.uri uniquely identifies the document. For documents store on disk this is a file URI.
+	// params.text the initial full content of the document.
 
+	const settings = await getDocumentSettings(params.textDocument.uri);
 	verifyMinimumTLVersion(settings);
+
+	const treeSitterDocument = new TreeSitterDocument();
+	treeSitterDocument.init(params.textDocument.uri, params.textDocument.text);
+
+	documents.set(params.textDocument.uri, treeSitterDocument);
 });
 
-// Only keep caches for open documents
-documents.onDidClose(e => {
-	settingsCache.delete(e.document.uri);
-	typesCommandCache.delete(e.document.uri);
+connection.onDidChangeTextDocument((params) => {
+	// The content of a text document did change in VS Code.
+	// params.uri uniquely identifies the document.
+	// params.contentChanges describe the content changes to the document.
+	const uri = params.textDocument.uri;
+
+	const document = documents.get(uri);
+
+	if (document === undefined) {
+		return;
+	}
+
+	document.edit(params.contentChanges);
+
+	validateTextDocument(uri);
+
+	// Put new `tl types` data in cache
+	feedTypeInfoCache(uri);
+});
+
+connection.onDidCloseTextDocument((params) => {
+	const uri = params.textDocument.uri;
+
+	settingsCache.delete(uri);
+	typesCommandCache.delete(uri);
+	documents.delete(uri);
 });
 
 async function showErrorMessage(message: string, ...actions: MessageActionItem[]) {
@@ -348,22 +374,13 @@ async function showErrorMessage(message: string, ...actions: MessageActionItem[]
 	return await connection.sendRequest(ShowMessageRequest.type, params);
 }
 
-// The content of a text document has changed. This event is emitted
-// when the text document first opened or when its content has changed.
-documents.onDidChangeContent(change => {
-	validateTextDocument(change.document.uri);
-
-	// Put new `tl types` data in cache
-	feedTypeInfoCache(change.document.uri);
-});
-
 // Monitored files have changed in VS Code
 connection.onDidChangeWatchedFiles(_change => {
-	for (let x of documents.all()) {
-		validateTextDocument(x.uri);
+	for (let [uri, document] of documents) {
+		validateTextDocument(uri);
 
 		// Put new `tl types` data in cache
-		feedTypeInfoCache(x.uri);
+		feedTypeInfoCache(uri);
 	}
 });
 
@@ -371,7 +388,7 @@ class TLNotFoundError extends Error { /* ... */ }
 
 const tmpBufferPrefix = "__tl__tmp__check-";
 
-async function pathInWorkspace(textDocument: TextDocument, pathToCheck: string): Promise<string | null> {
+async function pathInWorkspace(textDocument: TreeSitterDocument, pathToCheck: string): Promise<string | null> {
 	if (path.basename(pathToCheck).startsWith(tmpBufferPrefix)) {
 		return textDocument.uri
 	}
@@ -469,7 +486,7 @@ async function runTLCommand(command: TLCommand, filePath: string | null, setting
 }
 
 async function _validateTextDocument(uri: string): Promise<void> {
-	const textDocument: TextDocument | undefined = documents.get(uri);
+	const textDocument: TreeSitterDocument | undefined = documents.get(uri);
 
 	if (textDocument === undefined) {
 		return;
@@ -605,7 +622,7 @@ async function autoComplete(textDocumentPositionParams: TextDocumentPositionPara
 
 	let symbols = symbolsInScope(typeInfo.json, position.line + 1, position.character + 1);
 
-	for (const symbol of symbols) {
+	for (const [symbolIdentifier, symbol] of symbols) {
 		let typeDefinition: any | undefined = typeInfo.json?.["types"]?.[symbol.typeId];
 
 		if (typeDefinition === undefined || typeDefinition["str"] === undefined) {
@@ -637,23 +654,121 @@ async function autoComplete(textDocumentPositionParams: TextDocumentPositionPara
 
 connection.onCompletion(autoComplete);
 
-async function signatureHelp(textDocumentPosition: TextDocumentPositionParams, token: CancellationToken): Promise<SignatureHelp | null> {
-	// TODO
-	return null;
+function getFunctionSignature(uri: string, functionName: string, typeJson: any): SignatureInformation | null {
+	const typeInfo = getTypeInfoFromCache(uri);
 
-	const document: TextDocument | undefined = documents.get(textDocumentPosition.textDocument.uri);
+	if (typeInfo === null) {
+		return null;
+	}
+
+	const parameters = new Array<ParameterInformation>();
+
+	for (let argument of typeJson.args) {
+		let argumentType = typeInfo.json["types"][argument[0]];
+
+		parameters.push({
+			label: argumentType.str
+		});
+	}
+
+	const returnTypes = new Array<string>();
+
+	for (let returnType of typeJson.rets) {
+		let retType = typeInfo.json["types"][returnType[0]];
+
+		returnTypes.push(retType.str);
+	}
+
+	let label = `${functionName}(${parameters.map(x => x.label).join(", ")})`;
+
+	if (returnTypes.length > 0) {
+		label += ": " + returnTypes.join(", ");
+	}
+
+	return {
+		label: label,
+		parameters: parameters
+	}
+}
+
+async function signatureHelp(textDocumentPosition: TextDocumentPositionParams, token: CancellationToken): Promise<SignatureHelp | null> {
+	const document: TreeSitterDocument | undefined = documents.get(textDocumentPosition.textDocument.uri);
 
 	if (document === undefined) {
 		return null;
 	}
 
+	const position = textDocumentPosition.position;
+
+	const nodeAtPosition = document.getNodeAtPosition(position);
+
+	if (nodeAtPosition === null) {
+		return null;
+	}
+
+	const parentNode = nodeAtPosition.parent;
+
+	if (parentNode === null) {
+		return null;
+	}
+
+	if (parentNode.type !== "function_call") {
+		return null;
+	}
+
+	const numberOfArguments = nodeAtPosition.namedChildCount;
+
+	const calledObject = parentNode.childForFieldName("called_object")!;
+
+	let functionObject: SyntaxNode | null;
+
+	if (calledObject.type === "identifier") {
+		functionObject = calledObject;
+	} else {
+		functionObject = calledObject.lastChild;
+	}
+
+	if (functionObject === null) {
+		return null;
+	}
+
+	const functionName = functionObject.text;
+
+	const typeInfo = getTypeInfoFromCache(document.uri);
+
+	if (typeInfo === null) {
+		return null;
+	}
+
+	const symbols = symbolsInScope(typeInfo.json, position.line + 1, position.character + 1);
+
+	if (symbols === null) {
+		return null;
+	}
+
+	const functionTypeId = symbols.get(functionName);
+
+	if (functionTypeId === undefined) {
+		return null;
+	}
+
+	const functionType: any | undefined = typeInfo.json?.["types"]?.[functionTypeId.typeId];
+
+	if (functionType === undefined) {
+		return null;
+	}
+
+	const functionSignature = getFunctionSignature(document.uri, functionName, functionType);
+
+	if (functionSignature === null) {
+		return null;
+	}
+
 	return {
 		signatures: [
-			{
-				label: "This is a test"
-			}
+			functionSignature
 		],
-		activeParameter: null,
+		activeParameter: Math.max(0, numberOfArguments - 1),
 		activeSignature: 0,
 	};
 };
@@ -662,7 +777,7 @@ connection.onSignatureHelp(signatureHelp);
 
 const identifierRegex = /[a-zA-Z0-9_]/;
 
-function getWordRangeAtPosition(document: TextDocument, position: Position): Range | null {
+function getWordRangeAtPosition(document: TreeSitterDocument, position: Position): Range | null {
 	// Get text on current line
 	let str = document.getText(Range.create(position.line, 0, position.line, position.character));
 
@@ -685,14 +800,14 @@ function getWordRangeAtPosition(document: TextDocument, position: Position): Ran
 	return Range.create(position.line, start, position.line, end);
 }
 
-async function getTypeInfoAtPosition(textDocumentIdentifier: TextDocumentIdentifier, position: Position): Promise<TLTypeInfo | null> {
-	const textDocument = documents.get(textDocumentIdentifier.uri);
+async function getTypeInfoAtPosition(uri: string, position: Position): Promise<TLTypeInfo | null> {
+	const textDocument = documents.get(uri);
 
 	if (textDocument === undefined) {
 		return null;
 	}
 
-	const typeInfo = getTypeInfoFromCache(textDocumentIdentifier.uri);
+	const typeInfo = getTypeInfoFromCache(uri);
 
 	if (typeInfo === null) {
 		return null;
@@ -772,7 +887,7 @@ async function getTypeInfoAtPosition(textDocumentIdentifier: TextDocumentIdentif
 }
 
 connection.onDefinition(async function (params) {
-	const typeAtCursor = await getTypeInfoAtPosition(params.textDocument, params.position);
+	const typeAtCursor = await getTypeInfoAtPosition(params.textDocument.uri, params.position);
 
 	if (typeAtCursor === null) {
 		return null;
@@ -782,7 +897,7 @@ connection.onDefinition(async function (params) {
 });
 
 connection.onTypeDefinition(async function (params) {
-	const typeAtCursor = await getTypeInfoAtPosition(params.textDocument, params.position);
+	const typeAtCursor = await getTypeInfoAtPosition(params.textDocument.uri, params.position);
 
 	if (typeAtCursor === null) {
 		return null;
@@ -792,7 +907,7 @@ connection.onTypeDefinition(async function (params) {
 });
 
 connection.onHover(async function (params) {
-	const typeAtCursor = await getTypeInfoAtPosition(params.textDocument, params.position);
+	const typeAtCursor = await getTypeInfoAtPosition(params.textDocument.uri, params.position);
 
 	if (typeAtCursor === null) {
 		return null;
@@ -805,10 +920,6 @@ connection.onHover(async function (params) {
 		}
 	};
 });
-
-// Make the text document manager listen on the connection
-// for open, change and close text document events
-documents.listen(connection);
 
 // Listen on the connection
 connection.listen();
