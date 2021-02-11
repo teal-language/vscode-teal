@@ -67,15 +67,15 @@ function find(symbols: SymbolTuple[], y: number, x: number): number {
     return 0;
 }
 
-export function symbolsInScope(typeReport: TypeReport, y: number, x: number): Array<Symbol> {
-    let result = new Array<Symbol>();
+export function symbolsInScope(typeReport: TypeReport, y: number, x: number): Map<string, Symbol> {
+    let result = new Map<string, Symbol>();
 
     let symIndex = find(typeReport.symbols, y, x);
 
     const globals = typeReport.globals;
 
     for (const [str, typeId] of Object.entries(globals)) {
-        result.push({
+        result.set(str, {
             identifier: str,
             typeId: typeId
         });
@@ -93,7 +93,7 @@ export function symbolsInScope(typeReport: TypeReport, y: number, x: number): Ar
             symIndex = sym[3];
         }
         else {
-            result.push({
+            result.set(sym[2], {
                 y: sym[0],
                 x: sym[1],
                 identifier: sym[2],
