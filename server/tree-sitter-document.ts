@@ -31,7 +31,7 @@ export class TreeSitterDocument {
     async init(uri: string, text: string) {
         await Parser.init();
         this._parser = new Parser();
-        const langPath = path.resolve(__dirname, "tree-sitter-teal.wasm");
+        const langPath = path.resolve(__dirname, "..", "tree-sitter-teal.wasm");
         this._lang = await Parser.Language.load(langPath);
         this._parser.setLanguage(this._lang);
         this._document = TextDocument.create(uri, "teal", 1, text);
