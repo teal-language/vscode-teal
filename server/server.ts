@@ -35,7 +35,7 @@ import path = require('path');
 import { access as fsAccess, constants as fsConstants } from 'fs';
 import util = require("util");
 import { spawn } from 'child_process';
-import { symbolsInScope } from './teal';
+import { symbolsInScope, Symbol } from './teal';
 import { pointToPosition, TreeSitterDocument } from './tree-sitter-document'
 import { SyntaxNode } from 'web-tree-sitter';
 
@@ -661,6 +661,10 @@ function getFunctionSignature(uri: string, functionName: string, typeJson: any):
 		return null;
 	}
 
+	if (typeJson.args === undefined) {
+		return null;
+	}
+
 	const parameters = new Array<ParameterInformation>();
 
 	for (let argument of typeJson.args) {
@@ -689,6 +693,93 @@ function getFunctionSignature(uri: string, functionName: string, typeJson: any):
 		label: label,
 		parameters: parameters
 	}
+}
+
+function getSymbolParts(parentNode: SyntaxNode): Array<string> {
+	const result = new Array<string>();
+	
+	if (parentNode.childCount === 0) {
+		return [ parentNode.text ];
+	}
+
+	result.push(parentNode.lastChild!.text);
+
+	let ptr = parentNode.firstChild!;
+
+	while (ptr.firstChild !== null) {
+		result.push(ptr.lastChild!.text);
+		ptr = ptr.firstChild;
+	}
+
+	result.push(ptr.text);
+
+	return result.reverse();
+}
+
+/**
+ * Given a multi-symbol node, find the type of the last node
+ */
+function walkMultiSym(node: SyntaxNode, typeInfo: TLTypesCommandResult, symbols: Map<string, Symbol>) {
+	let ptr: SyntaxNode | null;
+
+	if (node.childCount === 0) {
+		ptr = node;
+	} else {
+		ptr = node.firstChild;
+
+		if (ptr === null) {
+			return null;
+		}
+
+		while (ptr.firstChild !== null) {
+			ptr = ptr.firstChild;
+		}
+	}
+
+	if (ptr === null) {
+		return null;
+	}
+
+	const rootName = ptr.text;
+
+	if (rootName === undefined) {
+		return null;
+	}
+
+	const rootTypeSymbol = symbols.get(rootName);
+
+	if (rootTypeSymbol === undefined) {
+		return null;
+	}
+
+	const rootType: any | undefined = typeInfo.json?.["types"]?.[rootTypeSymbol.typeId];
+
+	if (rootType === undefined) {
+		return null;
+	}
+
+	if (node.childCount === 0) {
+		return rootType;
+	}
+
+	const symbolParts = getSymbolParts(node);
+
+	let typeRef = rootType;
+
+	for (let x = 1; x < symbolParts.length; ++x) {
+		const childStr = symbolParts[x];
+
+		const childTypeId = typeRef.fields?.[childStr];
+
+		if (childTypeId === undefined) {
+			return null;
+		}
+
+		const childType = typeInfo.json?.["types"]?.[childTypeId];
+		typeRef = childType;
+	}
+
+	return typeRef;
 }
 
 async function signatureHelp(textDocumentPosition: TextDocumentPositionParams, token: CancellationToken): Promise<SignatureHelp | null> {
@@ -720,20 +811,6 @@ async function signatureHelp(textDocumentPosition: TextDocumentPositionParams, t
 
 	const calledObject = parentNode.childForFieldName("called_object")!;
 
-	let functionObject: SyntaxNode | null;
-
-	if (calledObject.type === "identifier") {
-		functionObject = calledObject;
-	} else {
-		functionObject = calledObject.lastChild;
-	}
-
-	if (functionObject === null) {
-		return null;
-	}
-
-	const functionName = functionObject.text;
-
 	const typeInfo = getTypeInfoFromCache(document.uri);
 
 	if (typeInfo === null) {
@@ -746,15 +823,21 @@ async function signatureHelp(textDocumentPosition: TextDocumentPositionParams, t
 		return null;
 	}
 
-	const functionTypeId = symbols.get(functionName);
+	const functionType: any | null = walkMultiSym(calledObject, typeInfo, symbols);
 
-	if (functionTypeId === undefined) {
+	if (functionType === null) {
 		return null;
 	}
 
-	const functionType: any | undefined = typeInfo.json?.["types"]?.[functionTypeId.typeId];
+	let functionName: string;
 
-	if (functionType === undefined) {
+	if (calledObject.type === "identifier") {
+		functionName = calledObject.text;
+	} else {
+		functionName = calledObject.lastChild!.text;
+	}
+
+	if (functionName === null) {
 		return null;
 	}
 

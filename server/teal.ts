@@ -3,7 +3,7 @@ type TypeId = number;
 
 type SymbolTuple = [number, number, string, TypeId];
 
-interface Symbol {
+export interface Symbol {
     y?: number,
     x?: number,
     identifier: string,
