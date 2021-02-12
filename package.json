@@ -50,7 +50,7 @@
     },
     "dependencies": {
         "tmp-promise": "^3.0.2",
-        "tree-sitter-teal": "github:euclidianAce/tree-sitter-teal#fc73205",
+        "tree-sitter-teal": "git+https://github.com/euclidianAce/tree-sitter-teal.git#fc73205",
         "vscode-languageclient": "^7.0.0",
         "vscode-languageserver": "^7.0.0",
         "vscode-languageserver-textdocument": "^1.0.1",
