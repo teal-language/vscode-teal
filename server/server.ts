@@ -641,11 +641,13 @@ async function autoComplete(textDocumentPositionParams: TextDocumentPositionPara
 			kind = CompletionItemKind.Class;
 		}
 
+		const detail = prettifyTypeStr(typeDefinition.str);
+
 		result.push({
 			label: symbol.identifier,
 			kind: kind,
 			data: symbol.typeId,
-			detail: typeDefinition.str
+			detail: detail
 		});
 	}
 
@@ -653,6 +655,15 @@ async function autoComplete(textDocumentPositionParams: TextDocumentPositionPara
 }
 
 connection.onCompletion(autoComplete);
+
+function prettifyTypeStr(type: string): string {
+	let result = type.replace(/<any type>/gm, "any");
+	result = result.replace(/@a/gm, "T");
+	result = result.replace(/@b/gm, "U");
+	result = result.replace(/\band\b/gm, "&")
+
+	return result
+}
 
 function getFunctionSignature(uri: string, functionName: string, typeJson: any): SignatureInformation | null {
 	const typeInfo = getTypeInfoFromCache(uri);
@@ -671,7 +682,7 @@ function getFunctionSignature(uri: string, functionName: string, typeJson: any):
 		let argumentType = typeInfo.json["types"][argument[0]];
 
 		parameters.push({
-			label: argumentType.str
+			label: prettifyTypeStr(argumentType.str)
 		});
 	}
 
@@ -680,7 +691,7 @@ function getFunctionSignature(uri: string, functionName: string, typeJson: any):
 	for (let returnType of typeJson.rets) {
 		let retType = typeInfo.json["types"][returnType[0]];
 
-		returnTypes.push(retType.str);
+		returnTypes.push(prettifyTypeStr(retType.str));
 	}
 
 	let label = `${functionName}(${parameters.map(x => x.label).join(", ")})`;
@@ -974,7 +985,7 @@ async function getTypeInfoAtPosition(uri: string, position: Position): Promise<T
 
 	return {
 		location: destinationLocation,
-		name: typeName
+		name: prettifyTypeStr(typeName)
 	}
 }
 
