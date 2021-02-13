@@ -86,7 +86,7 @@ export class TreeSitterDocument {
             return null;
         }
 
-        return this._tree.rootNode.namedDescendantForPosition(positionToPoint(position));
+        return smallestDescendantForPosition(this._tree.rootNode, position);
     }
 };
 
@@ -102,4 +102,53 @@ export function pointToPosition(point: Parser.Point): Position {
         line: point.row,
         character: point.column
     }
+}
+
+export function positionInNode(pos: Position, node: Parser.SyntaxNode): boolean {
+    return pos.line >= node.startPosition.row
+        && pos.line <= node.endPosition.row
+        && !(
+            (pos.line === node.startPosition.row && pos.character < node.startPosition.column)
+            || (pos.line === node.endPosition.row && pos.character > node.endPosition.column)
+        );
+}
+
+export function nodeLength(node: Parser.SyntaxNode): number {
+    return node.endIndex - node.startIndex;
+}
+
+export function smallestDescendantForPosition(rootNode: Parser.SyntaxNode, position: Position): Parser.SyntaxNode {
+    if (rootNode.namedChildren.length === 0) {
+        return rootNode;
+    }
+
+    let min = rootNode;
+
+    for (let i = 0; i < rootNode.namedChildren.length; ++i) {
+        const child = rootNode.namedChildren[i];
+
+        if (positionInNode(position, child)) {
+            const smallestSubChildren = smallestDescendantForPosition(child, position);
+
+            if (nodeLength(smallestSubChildren) <= nodeLength(min)) {
+                min = smallestSubChildren
+            }
+        }
+    }
+
+    let sibling = rootNode.nextNamedSibling;
+
+    while (sibling !== null) {
+        if (positionInNode(position, sibling)) {
+            const smallestSubChildren = smallestDescendantForPosition(sibling, position);
+
+            if (nodeLength(smallestSubChildren) <= nodeLength(min)) {
+                min = smallestSubChildren
+            }
+        }
+
+        sibling = sibling.nextNamedSibling;
+    }
+
+    return min
 }
