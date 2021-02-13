@@ -633,7 +633,7 @@ async function autoComplete(textDocumentPositionParams: TextDocumentPositionPara
 
 		if (typeDefinition["ref"] !== undefined) {
 			kind = CompletionItemKind.Variable;
-		} else if (typeDefinition["str"].startsWith("function(")) {
+		} else if (typeDefinition["str"].startsWith("function(") || typeDefinition["str"].startsWith("function<")) {
 			kind = CompletionItemKind.Function;
 		} else if (typeDefinition["enums"] !== undefined) {
 			kind = CompletionItemKind.Enum;
