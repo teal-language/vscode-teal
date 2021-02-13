@@ -52,7 +52,7 @@ export class TreeSitterDocument {
         this._document = TextDocument.update(this._document!, edits, this._document!.version + 1)
 
         for (const edit of edits) {
-            if ("range" in edit) {             
+            if ("range" in edit) {
                 const startIndex = this._document.offsetAt(edit.range.start);
                 const oldEndIndex = this._document.offsetAt(edit.range.end);
                 const newEndIndex = startIndex + edit.text.length;
@@ -66,7 +66,7 @@ export class TreeSitterDocument {
                     newEndPosition: positionToPoint(this._document.positionAt(newEndIndex)),
                 };
 
-                this._tree.edit(delta);              
+                this._tree.edit(delta);
             }
         }
 
@@ -92,7 +92,7 @@ export class TreeSitterDocument {
 
 export function positionToPoint(pos: Position): Parser.Point {
     return {
-        row: pos.line, 
+        row: pos.line,
         column: pos.character
     }
 }

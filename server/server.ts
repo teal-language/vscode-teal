@@ -697,17 +697,26 @@ function getFunctionSignature(uri: string, functionName: string, typeJson: any):
 
 function getSymbolParts(parentNode: SyntaxNode): Array<string> {
 	const result = new Array<string>();
-	
+
 	if (parentNode.childCount === 0) {
-		return [ parentNode.text ];
+		return [parentNode.text];
 	}
 
-	result.push(parentNode.lastChild!.text);
-
-	let ptr = parentNode.firstChild!;
+	let ptr = parentNode;
 
 	while (ptr.firstChild !== null) {
-		result.push(ptr.lastChild!.text);
+		if (ptr.type === "index" || ptr.type === "method_index") {
+			let field = ptr.lastChild!;
+
+			const exprKey = ptr.lastNamedChild;
+
+			if (exprKey !== null) {
+				field = exprKey;
+			}
+
+			result.push(field.text);
+		}
+
 		ptr = ptr.firstChild;
 	}
 
@@ -719,7 +728,7 @@ function getSymbolParts(parentNode: SyntaxNode): Array<string> {
 /**
  * Given a multi-symbol node, find the type of the last node
  */
-function walkMultiSym(node: SyntaxNode, typeInfo: TLTypesCommandResult, symbols: Map<string, Symbol>) {
+function walkMultiSym(node: SyntaxNode, typeInfo: TLTypesCommandResult, symbols: Map<string, Symbol>): any | null {
 	let ptr: SyntaxNode | null;
 
 	if (node.childCount === 0) {
@@ -823,7 +832,7 @@ async function signatureHelp(textDocumentPosition: TextDocumentPositionParams, t
 		return null;
 	}
 
-	const functionType: any | null = walkMultiSym(calledObject, typeInfo, symbols);
+	const functionType = walkMultiSym(calledObject, typeInfo, symbols);
 
 	if (functionType === null) {
 		return null;
