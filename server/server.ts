@@ -36,7 +36,7 @@ import { access as fsAccess, constants as fsConstants } from 'fs';
 import util = require("util");
 import { spawn } from 'child_process';
 import { symbolsInScope, Symbol } from './teal';
-import { pointToPosition, TreeSitterDocument } from './tree-sitter-document'
+import { pointToPosition, positionInNode, positionToPoint, TreeSitterDocument } from './tree-sitter-document'
 import { SyntaxNode } from 'web-tree-sitter';
 
 interface TLCommandIOInfo {
@@ -568,35 +568,69 @@ async function _validateTextDocument(uri: string): Promise<void> {
 
 const validateTextDocument = debounce(500, _validateTextDocument);
 
-async function autoComplete(textDocumentPositionParams: TextDocumentPositionParams): Promise<CompletionItem[]> {
-	let textDocument = documents.get(textDocumentPositionParams.textDocument.uri);
+function positionIsInNodeOfType(position: Position, nodeAtPosition: SyntaxNode, type: string): boolean {
+	let ptr: SyntaxNode | null = nodeAtPosition;
 
-	if (textDocument === undefined) {
+	while (ptr !== null) {
+		if (ptr.type === type) {
+			console.log("Found type (ptr)", type);
+			return true;
+		}
+
+		const fieldNode = ptr.childForFieldName(type);
+
+		if (fieldNode != null && positionInNode(position, fieldNode)) {
+			console.log("Found type (field)", type, "at", fieldNode.startPosition, "to", fieldNode.endPosition);
+			return true;
+		}
+
+		ptr = ptr.parent;
+	}
+
+	return false;
+}
+
+async function autoComplete(textDocumentPositionParams: TextDocumentPositionParams): Promise<CompletionItem[]> {
+	let document = documents.get(textDocumentPositionParams.textDocument.uri);
+
+	if (document === undefined) {
 		return [];
 	}
 
 	const position = textDocumentPositionParams.position;
 
-	const typeInfo = getTypeInfoFromCache(textDocument.uri);
+	let nodeAtPosition: SyntaxNode | null = document.getNodeAtPosition(position);
+
+	if (nodeAtPosition === null) {
+		return [];
+	}
+
+	const isType = positionIsInNodeOfType(position, nodeAtPosition, "type_annotation")
+		|| positionIsInNodeOfType(position, nodeAtPosition, "type")
+		|| positionIsInNodeOfType(position, nodeAtPosition, "table_type")
+		|| positionIsInNodeOfType(position, nodeAtPosition, "type_cast")
+		|| positionIsInNodeOfType(position, nodeAtPosition, "return_type")
+		|| positionIsInNodeOfType(position, nodeAtPosition, "simple_type");
+
+	console.log("===========");
+	console.log("Is type annotation:", isType);
+	console.log("===========");
+
+	const typeInfo = getTypeInfoFromCache(document.uri);
 
 	if (typeInfo === null) {
 		return [];
 	}
 
-	function makeBasicItem(str: string) {
+	function makeBasicItem(str: string, kind: CompletionItemKind) {
 		return {
 			label: str,
-			kind: CompletionItemKind.Keyword
+			kind: kind
 		};
 	}
 
 	// Built-in types and keywords
 	let result: CompletionItem[] = [
-		"any",
-		"number",
-		"string",
-		"boolean",
-		"thread",
 		"nil",
 		"break",
 		"goto",
@@ -618,7 +652,16 @@ async function autoComplete(textDocumentPositionParams: TextDocumentPositionPara
 		"enum",
 		"type",
 		"userdata"
-	].map(x => makeBasicItem(x));
+	].map(x => makeBasicItem(x, CompletionItemKind.Keyword));
+
+	result = result.concat([
+		"any",
+		"number",
+		"string",
+		"boolean",
+		"thread",
+		"nil",
+	].map(x => makeBasicItem(x, CompletionItemKind.Interface)));
 
 	let symbols = symbolsInScope(typeInfo.json, position.line + 1, position.character + 1);
 
@@ -629,7 +672,7 @@ async function autoComplete(textDocumentPositionParams: TextDocumentPositionPara
 			continue;
 		}
 
-		let kind: CompletionItemKind = CompletionItemKind.Interface;
+		let kind: number = CompletionItemKind.Variable;
 
 		if (typeDefinition["ref"] !== undefined) {
 			kind = CompletionItemKind.Variable;
@@ -645,10 +688,22 @@ async function autoComplete(textDocumentPositionParams: TextDocumentPositionPara
 
 		result.push({
 			label: symbol.identifier,
-			kind: kind,
+			kind: kind as CompletionItemKind,
 			data: symbol.typeId,
 			detail: detail
 		});
+	}
+
+	if (isType === true) {
+		result = result.filter(x =>
+			x.kind !== CompletionItemKind.Variable
+			&& x.kind !== CompletionItemKind.Function
+			&& x.kind !== CompletionItemKind.Keyword
+		);
+	} else {
+		result = result.filter(x =>
+			x.kind !== CompletionItemKind.Interface
+		);
 	}
 
 	return result;
