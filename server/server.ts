@@ -114,7 +114,7 @@ connection.onInitialize((params: InitializeParams) => {
 			},
 			completionProvider: {
 				resolveProvider: false,
-				triggerCharacters: [".", ":"]
+				triggerCharacters: [".", ":"],
 			},
 		}
 	};
@@ -593,10 +593,18 @@ function findNodeAbove(baseNode: SyntaxNode, type: string): SyntaxNode | null {
  * Given an index node, get the type info in json format of the before-last node
  */
 function walkMultiSym2(node: SyntaxNode, typeInfo: TLTypesCommandResult, symbols: Map<string, Symbol>): any | null {
-	const indexNode = findNodeAbove(node, "index");
+	let indexNode = findNodeAbove(node, "index");
 
 	if (indexNode === null) {
-		return null;
+		indexNode = findNodeAbove(node, "method_index");
+
+		if (indexNode === null) {
+			indexNode = findNodeAbove(node, "type_index");
+
+			if (indexNode === null) {
+				return null;
+			}
+		}
 	}
 
 	console.log("Index node:", indexNode.text);
@@ -629,10 +637,14 @@ function walkMultiSym2(node: SyntaxNode, typeInfo: TLTypesCommandResult, symbols
 		return null;
 	}
 
-	const rootType: any | undefined = typeInfo.json?.["types"]?.[rootTypeSymbol.typeId];
+	let rootType: any | undefined = typeInfo.json?.["types"]?.[rootTypeSymbol.typeId];
 
 	if (rootType === undefined) {
 		return null;
+	}
+
+	while (rootType.ref !== undefined) {
+		rootType = typeInfo.json?.["types"]?.[rootType.ref];
 	}
 
 	if (rootType.childCount === 0) {
@@ -655,27 +667,48 @@ function walkMultiSym2(node: SyntaxNode, typeInfo: TLTypesCommandResult, symbols
 
 		let childTypeId: any | undefined;
 
+		console.log("Type code:", typeRef["t"])
+
 		// is it a record? if so, check in fields
 		if (typeRef["t"] === 0x00020008) {
 			childTypeId = typeRef.fields?.[childStr];
-			// ah, maybe it's an array?
-		} else if (typeRef["t"] === 0x00010008) {
+		}
+
+		// a "nominal"?
+		else if (typeRef["t"] === 0x10000000) {
+			while (typeRef.ref !== undefined) {
+				typeRef = typeInfo.json?.["types"]?.[typeRef.ref];
+			}
+
+			childTypeId = typeRef.fields?.[childStr];
+		}
+
+		// an array?
+		else if (typeRef["t"] === 0x00010008) {
 			childTypeId = typeRef.elements;
-			// well, how about a map?
-		} else if (typeRef["t"] === 0x00040008) {
+		}
+
+		// a map?
+		else if (typeRef["t"] === 0x00040008) {
 			childTypeId = typeRef.values;
-			// mmh, is it one of those fabled arrayrecords?
-		} else if (typeRef["t"] === 0x00030008) {
+		}
+
+		// an arrayrecords?
+		else if (typeRef["t"] === 0x00030008) {
 			childTypeId = typeRef.fields?.[childStr];
 
 			if (childTypeId === undefined) {
 				childTypeId = typeRef.elements;
 			}
-			// tuples not yet supported :(
-		} else if (typeRef["t"] === 0x00080008) {
+		}
 
-			// a function! get the first return value
-		} else if (typeRef["t"] === 0x00000020) {
+		// tuples not yet supported :(
+		else if (typeRef["t"] === 0x00080008) {
+
+		}
+
+		// a function?
+		else if (typeRef["t"] === 0x00000020) {
 			childTypeId = typeRef.rets[0][0];
 		}
 
@@ -683,7 +716,12 @@ function walkMultiSym2(node: SyntaxNode, typeInfo: TLTypesCommandResult, symbols
 			return null;
 		}
 
-		const childType = typeInfo.json?.["types"]?.[childTypeId];
+		let childType = typeInfo.json?.["types"]?.[childTypeId];
+
+		while (childType.ref !== undefined) {
+			childType = typeInfo.json?.["types"]?.[childType.ref];
+		}
+
 		typeRef = childType;
 	}
 
@@ -816,7 +854,7 @@ async function autoComplete(textDocumentPositionParams: TextDocumentPositionPara
 			kind = CompletionItemKind.Function;
 		} else if (typeDefinition["enums"] !== undefined) {
 			kind = CompletionItemKind.Enum;
-		} else if (typeDefinition["str"].startsWith("type record")) {
+		} else if (typeDefinition["str"].startsWith("record") || typeDefinition["str"].startsWith("type record")) {
 			kind = CompletionItemKind.Class;
 		}
 
