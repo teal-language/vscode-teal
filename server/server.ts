@@ -113,7 +113,8 @@ connection.onInitialize((params: InitializeParams) => {
 				triggerCharacters: ["(", ","]
 			},
 			completionProvider: {
-				resolveProvider: false
+				resolveProvider: false,
+				triggerCharacters: [".", ":"]
 			},
 		}
 	};
@@ -568,26 +569,127 @@ async function _validateTextDocument(uri: string): Promise<void> {
 
 const validateTextDocument = debounce(500, _validateTextDocument);
 
-function positionIsInNodeOfType(position: Position, nodeAtPosition: SyntaxNode, type: string): boolean {
-	let ptr: SyntaxNode | null = nodeAtPosition;
+function findNodeAbove(baseNode: SyntaxNode, type: string): SyntaxNode | null {
+	let ptr: SyntaxNode | null = baseNode;
 
 	while (ptr !== null) {
 		if (ptr.type === type) {
-			console.log("Found type (ptr)", type);
-			return true;
+			return ptr;
 		}
 
 		const fieldNode = ptr.childForFieldName(type);
 
-		if (fieldNode != null && positionInNode(position, fieldNode)) {
-			console.log("Found type (field)", type, "at", fieldNode.startPosition, "to", fieldNode.endPosition);
-			return true;
+		if (fieldNode != null) {
+			return fieldNode;
 		}
 
 		ptr = ptr.parent;
 	}
 
-	return false;
+	return null;
+}
+
+/**
+ * Given an index node, get the type info in json format of the before-last node
+ */
+function walkMultiSym2(node: SyntaxNode, typeInfo: TLTypesCommandResult, symbols: Map<string, Symbol>): any | null {
+	const indexNode = findNodeAbove(node, "index");
+
+	if (indexNode === null) {
+		return null;
+	}
+
+	console.log("Index node:", indexNode.text);
+
+	let ptr: SyntaxNode | null;
+
+	if (indexNode.childCount === 0) {
+		ptr = indexNode;
+	} else {
+		ptr = indexNode.firstChild!;
+
+		while (ptr.firstChild !== null) {
+			ptr = ptr.firstChild;
+		}
+	}
+
+	if (ptr === null) {
+		return null;
+	}
+
+	const rootName = ptr.text;
+
+	if (rootName === undefined) {
+		return null;
+	}
+
+	const rootTypeSymbol = symbols.get(rootName);
+
+	if (rootTypeSymbol === undefined) {
+		return null;
+	}
+
+	const rootType: any | undefined = typeInfo.json?.["types"]?.[rootTypeSymbol.typeId];
+
+	if (rootType === undefined) {
+		return null;
+	}
+
+	if (rootType.childCount === 0) {
+		return rootType;
+	}
+
+	console.log("Getting the symbols parts");
+
+	const symbolParts = getSymbolParts(indexNode);
+
+	console.log("Got the parts:", symbolParts);
+
+	let typeRef = rootType;
+
+	for (let x = 1; x < symbolParts.length - 1; ++x) {
+		const childStr = symbolParts[x];
+
+		// what is the type of the next symbol?
+		// it depends on the type of the current one
+
+		let childTypeId: any | undefined;
+
+		// is it a record? if so, check in fields
+		if (typeRef["t"] === 0x00020008) {
+			childTypeId = typeRef.fields?.[childStr];
+			// ah, maybe it's an array?
+		} else if (typeRef["t"] === 0x00010008) {
+			childTypeId = typeRef.elements;
+			// well, how about a map?
+		} else if (typeRef["t"] === 0x00040008) {
+			childTypeId = typeRef.values;
+			// mmh, is it one of those fabled arrayrecords?
+		} else if (typeRef["t"] === 0x00030008) {
+			childTypeId = typeRef.fields?.[childStr];
+
+			if (childTypeId === undefined) {
+				childTypeId = typeRef.elements;
+			}
+			// tuples not yet supported :(
+		} else if (typeRef["t"] === 0x00080008) {
+
+			// a function! get the first return value
+		} else if (typeRef["t"] === 0x00000020) {
+			childTypeId = typeRef.rets[0][0];
+		}
+
+		if (childTypeId === undefined) {
+			return null;
+		}
+
+		const childType = typeInfo.json?.["types"]?.[childTypeId];
+		typeRef = childType;
+	}
+
+	console.log("Type at the tip:", typeRef);
+
+	return typeRef;
 }
 
 async function autoComplete(textDocumentPositionParams: TextDocumentPositionParams): Promise<CompletionItem[]> {
@@ -605,22 +707,20 @@ async function autoComplete(textDocumentPositionParams: TextDocumentPositionPara
 		return [];
 	}
 
-	const isType = positionIsInNodeOfType(position, nodeAtPosition, "type_annotation")
-		|| positionIsInNodeOfType(position, nodeAtPosition, "type")
-		|| positionIsInNodeOfType(position, nodeAtPosition, "table_type")
-		|| positionIsInNodeOfType(position, nodeAtPosition, "type_cast")
-		|| positionIsInNodeOfType(position, nodeAtPosition, "return_type")
-		|| positionIsInNodeOfType(position, nodeAtPosition, "simple_type");
-
-	console.log("===========");
-	console.log("Is type annotation:", isType);
-	console.log("===========");
+	const isType = findNodeAbove(nodeAtPosition, "type_annotation") !== null
+		|| findNodeAbove(nodeAtPosition, "type") !== null
+		|| findNodeAbove(nodeAtPosition, "table_type") !== null
+		|| findNodeAbove(nodeAtPosition, "type_cast") !== null
+		|| findNodeAbove(nodeAtPosition, "return_type") !== null
+		|| findNodeAbove(nodeAtPosition, "simple_type") !== null;
 
 	const typeInfo = getTypeInfoFromCache(document.uri);
 
 	if (typeInfo === null) {
 		return [];
 	}
+
+	let symbols = symbolsInScope(typeInfo.json, position.line + 1, position.character + 1);
 
 	function makeBasicItem(str: string, kind: CompletionItemKind) {
 		return {
@@ -629,8 +729,46 @@ async function autoComplete(textDocumentPositionParams: TextDocumentPositionPara
 		};
 	}
 
+	let result: CompletionItem[] = [];
+
+	let indexType = walkMultiSym2(nodeAtPosition, typeInfo, symbols);
+
+	if (indexType !== null && indexType.fields !== undefined) {
+		for (const [identifier, typeId] of Object.entries(indexType.fields)) {
+			let typeDefinition: any | undefined = typeInfo.json?.["types"]?.[typeId as number];
+
+			if (typeDefinition === undefined || typeDefinition["str"] === undefined) {
+				continue;
+			}
+
+			let kind: number = CompletionItemKind.Variable;
+
+			if (typeDefinition["ref"] !== undefined) {
+				kind = CompletionItemKind.Variable;
+			} else if (typeDefinition["str"].startsWith("function(") || typeDefinition["str"].startsWith("function<")) {
+				kind = CompletionItemKind.Function;
+			} else if (typeDefinition["enums"] !== undefined) {
+				kind = CompletionItemKind.Enum;
+			} else if (typeDefinition["str"].startsWith("type record")) {
+				kind = CompletionItemKind.Class;
+			}
+
+			const detail = prettifyTypeStr(typeDefinition.str);
+
+			result.push({
+				label: identifier,
+				kind: kind as CompletionItemKind,
+				data: typeId,
+				detail: detail,
+				commitCharacters: ["("]
+			});
+		}
+
+		return result;
+	}
+
 	// Built-in types and keywords
-	let result: CompletionItem[] = [
+	result = [
 		"nil",
 		"break",
 		"goto",
@@ -663,8 +801,6 @@ async function autoComplete(textDocumentPositionParams: TextDocumentPositionPara
 		"nil",
 	].map(x => makeBasicItem(x, CompletionItemKind.Interface)));
 
-	let symbols = symbolsInScope(typeInfo.json, position.line + 1, position.character + 1);
-
 	for (const [symbolIdentifier, symbol] of symbols) {
 		let typeDefinition: any | undefined = typeInfo.json?.["types"]?.[symbol.typeId];
 
@@ -690,7 +826,8 @@ async function autoComplete(textDocumentPositionParams: TextDocumentPositionPara
 			label: symbol.identifier,
 			kind: kind as CompletionItemKind,
 			data: symbol.typeId,
-			detail: detail
+			detail: detail,
+			commitCharacters: ["("]
 		});
 	}
 
@@ -762,23 +899,19 @@ function getFunctionSignature(uri: string, functionName: string, typeJson: any):
 }
 
 function getSymbolParts(parentNode: SyntaxNode): Array<string> {
-	const result = new Array<string>();
-
 	if (parentNode.childCount === 0) {
 		return [parentNode.text];
 	}
 
-	let ptr = parentNode;
+	const result = new Array<string>();
+
+	let ptr: SyntaxNode | null = parentNode;
+
+	console.log("This the parent node:", parentNode.text);
 
 	while (ptr.firstChild !== null) {
 		if (ptr.type === "index" || ptr.type === "method_index") {
 			let field = ptr.lastChild!;
-
-			const exprKey = ptr.lastNamedChild;
-
-			if (exprKey !== null) {
-				field = exprKey;
-			}
 
 			result.push(field.text);
 		}
@@ -789,72 +922,6 @@ function getSymbolParts(parentNode: SyntaxNode): Array<string> {
 	result.push(ptr.text);
 
 	return result.reverse();
-}
-
-/**
- * Given a multi-symbol node, find the type of the last node
- */
-function walkMultiSym(node: SyntaxNode, typeInfo: TLTypesCommandResult, symbols: Map<string, Symbol>): any | null {
-	let ptr: SyntaxNode | null;
-
-	if (node.childCount === 0) {
-		ptr = node;
-	} else {
-		ptr = node.firstChild;
-
-		if (ptr === null) {
-			return null;
-		}
-
-		while (ptr.firstChild !== null) {
-			ptr = ptr.firstChild;
-		}
-	}
-
-	if (ptr === null) {
-		return null;
-	}
-
-	const rootName = ptr.text;
-
-	if (rootName === undefined) {
-		return null;
-	}
-
-	const rootTypeSymbol = symbols.get(rootName);
-
-	if (rootTypeSymbol === undefined) {
-		return null;
-	}
-
-	const rootType: any | undefined = typeInfo.json?.["types"]?.[rootTypeSymbol.typeId];
-
-	if (rootType === undefined) {
-		return null;
-	}
-
-	if (node.childCount === 0) {
-		return rootType;
-	}
-
-	const symbolParts = getSymbolParts(node);
-
-	let typeRef = rootType;
-
-	for (let x = 1; x < symbolParts.length; ++x) {
-		const childStr = symbolParts[x];
-
-		const childTypeId = typeRef.fields?.[childStr];
-
-		if (childTypeId === undefined) {
-			return null;
-		}
-
-		const childType = typeInfo.json?.["types"]?.[childTypeId];
-		typeRef = childType;
-	}
-
-	return typeRef;
 }
 
 async function signatureHelp(textDocumentPosition: TextDocumentPositionParams, token: CancellationToken): Promise<SignatureHelp | null> {
@@ -872,19 +939,19 @@ async function signatureHelp(textDocumentPosition: TextDocumentPositionParams, t
 		return null;
 	}
 
-	const parentNode = nodeAtPosition.parent;
+	const parentNode = findNodeAbove(nodeAtPosition, "function_call");
 
 	if (parentNode === null) {
 		return null;
 	}
 
-	if (parentNode.type !== "function_call") {
+	const calledObject = parentNode.childForFieldName("called_object")!;
+
+	const functionArgs = findNodeAbove(nodeAtPosition, "arguments");
+
+	if (functionArgs === null) {
 		return null;
 	}
-
-	const numberOfArguments = nodeAtPosition.namedChildCount;
-
-	const calledObject = parentNode.childForFieldName("called_object")!;
 
 	const typeInfo = getTypeInfoFromCache(document.uri);
 
@@ -898,7 +965,7 @@ async function signatureHelp(textDocumentPosition: TextDocumentPositionParams, t
 		return null;
 	}
 
-	const functionType = walkMultiSym(calledObject, typeInfo, symbols);
+	const functionType = walkMultiSym2(calledObject, typeInfo, symbols);
 
 	if (functionType === null) {
 		return null;
@@ -926,7 +993,7 @@ async function signatureHelp(textDocumentPosition: TextDocumentPositionParams, t
 		signatures: [
 			functionSignature
 		],
-		activeParameter: Math.max(0, numberOfArguments - 1),
+		activeParameter: Math.max(0, functionArgs.namedChildCount - 1),
 		activeSignature: 0,
 	};
 };
