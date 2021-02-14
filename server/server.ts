@@ -734,6 +734,16 @@ function walkMultiSym2(node: SyntaxNode, typeInfo: TLTypesCommandResult, symbols
 	return typeRef;
 }
 
+function getTypeById(typeInfo: TLTypesCommandResult, typeId: number): any | null {
+	let typeDefinition: any | undefined = typeInfo.json?.["types"]?.[typeId];
+
+	if (typeDefinition === undefined) {
+		return null;
+	}
+
+	return typeDefinition;
+}
+
 async function autoComplete(textDocumentPositionParams: TextDocumentPositionParams): Promise<CompletionItem[]> {
 	let document = documents.get(textDocumentPositionParams.textDocument.uri);
 
@@ -764,46 +774,50 @@ async function autoComplete(textDocumentPositionParams: TextDocumentPositionPara
 
 	let symbols = symbolsInScope(typeInfo.json, position.line + 1, position.character + 1);
 
-	function makeBasicItem(str: string, kind: CompletionItemKind) {
+	let indexType = walkMultiSym2(nodeAtPosition, typeInfo, symbols);
+
+	let result: CompletionItem[] = [];
+
+	function makeBasicItem(str: string, kind: CompletionItemKind): CompletionItem {
 		return {
 			label: str,
 			kind: kind
 		};
 	}
 
-	let result: CompletionItem[] = [];
+	function feedTypeItem(label: string, typeId: number) {
+		let typeDefinition = getTypeById(typeInfo!, typeId);
 
-	let indexType = walkMultiSym2(nodeAtPosition, typeInfo, symbols);
+		if (typeDefinition === null || typeDefinition["str"] === undefined) {
+			return;
+		}
+
+		let kind: number = CompletionItemKind.Variable;
+
+		if (typeDefinition["ref"] !== undefined) {
+			kind = CompletionItemKind.Variable;
+		} else if (typeDefinition["str"].startsWith("function(") || typeDefinition["str"].startsWith("function<")) {
+			kind = CompletionItemKind.Function;
+		} else if (typeDefinition["enums"] !== undefined) {
+			kind = CompletionItemKind.Enum;
+		} else if (typeDefinition["str"].startsWith("type record")) {
+			kind = CompletionItemKind.Class;
+		}
+
+		const detail = prettifyTypeStr(typeDefinition.str);
+
+		result.push({
+			label: label,
+			kind: kind as CompletionItemKind,
+			data: typeDefinition,
+			detail: detail,
+			commitCharacters: ["("]
+		});
+	}
 
 	if (indexType !== null && indexType.fields !== undefined) {
 		for (const [identifier, typeId] of Object.entries(indexType.fields)) {
-			let typeDefinition: any | undefined = typeInfo.json?.["types"]?.[typeId as number];
-
-			if (typeDefinition === undefined || typeDefinition["str"] === undefined) {
-				continue;
-			}
-
-			let kind: number = CompletionItemKind.Variable;
-
-			if (typeDefinition["ref"] !== undefined) {
-				kind = CompletionItemKind.Variable;
-			} else if (typeDefinition["str"].startsWith("function(") || typeDefinition["str"].startsWith("function<")) {
-				kind = CompletionItemKind.Function;
-			} else if (typeDefinition["enums"] !== undefined) {
-				kind = CompletionItemKind.Enum;
-			} else if (typeDefinition["str"].startsWith("type record")) {
-				kind = CompletionItemKind.Class;
-			}
-
-			const detail = prettifyTypeStr(typeDefinition.str);
-
-			result.push({
-				label: identifier,
-				kind: kind as CompletionItemKind,
-				data: typeId,
-				detail: detail,
-				commitCharacters: ["("]
-			});
+			feedTypeItem(identifier, typeId as number);
 		}
 
 		return result;
@@ -844,33 +858,7 @@ async function autoComplete(textDocumentPositionParams: TextDocumentPositionPara
 	].map(x => makeBasicItem(x, CompletionItemKind.Interface)));
 
 	for (const [symbolIdentifier, symbol] of symbols) {
-		let typeDefinition: any | undefined = typeInfo.json?.["types"]?.[symbol.typeId];
-
-		if (typeDefinition === undefined || typeDefinition["str"] === undefined) {
-			continue;
-		}
-
-		let kind: number = CompletionItemKind.Variable;
-
-		if (typeDefinition["ref"] !== undefined) {
-			kind = CompletionItemKind.Variable;
-		} else if (typeDefinition["str"].startsWith("function(") || typeDefinition["str"].startsWith("function<")) {
-			kind = CompletionItemKind.Function;
-		} else if (typeDefinition["enums"] !== undefined) {
-			kind = CompletionItemKind.Enum;
-		} else if (typeDefinition["str"].startsWith("record") || typeDefinition["str"].startsWith("type record")) {
-			kind = CompletionItemKind.Class;
-		}
-
-		const detail = prettifyTypeStr(typeDefinition.str);
-
-		result.push({
-			label: symbol.identifier,
-			kind: kind as CompletionItemKind,
-			data: symbol.typeId,
-			detail: detail,
-			commitCharacters: ["("]
-		});
+		feedTypeItem(symbol.identifier, symbol.typeId);
 	}
 
 	if (isType === true) {
