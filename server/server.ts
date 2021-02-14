@@ -336,7 +336,7 @@ connection.onDidOpenTextDocument(async (params) => {
 	verifyMinimumTLVersion(settings);
 
 	const treeSitterDocument = new TreeSitterDocument();
-	treeSitterDocument.init(params.textDocument.uri, params.textDocument.text);
+	await treeSitterDocument.init(params.textDocument.uri, params.textDocument.text);
 
 	documents.set(params.textDocument.uri, treeSitterDocument);
 });
@@ -367,6 +367,10 @@ connection.onDidCloseTextDocument((params) => {
 	settingsCache.delete(uri);
 	typesCommandCache.delete(uri);
 	documents.delete(uri);
+});
+
+connection.onDidSaveTextDocument((params) => {
+
 });
 
 async function showErrorMessage(message: string, ...actions: MessageActionItem[]) {
