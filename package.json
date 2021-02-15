@@ -57,9 +57,11 @@
         "web-tree-sitter": "^0.18.0"
     },
     "devDependencies": {
+        "@types/mocha": "^8.2.0",
         "@types/node": "^14.14.22",
         "@types/tmp": "^0.2.0",
         "@types/vscode": "^1.52.0",
+        "mocha": "^8.3.0",
         "ovsx": "0.1.0-next.a9154dc",
         "tree-sitter-cli": "^0.18.0",
         "tree-sitter-teal": "git+https://github.com/euclidianAce/tree-sitter-teal.git#fc73205",
@@ -69,7 +71,8 @@
     "scripts": {
         "package": "vsce package",
         "vscode:prepublish": "npm run build",
-        "build": "tsc -b && tree-sitter build-wasm node_modules/tree-sitter-teal && node postbuild.js",
-        "watch": "tsc -b -w"
+        "build": "tsc -b && tree-sitter build-wasm node_modules/tree-sitter-teal && node scripts/post-build.js",
+        "watch": "tsc -b -w",
+        "test": "mocha out/test/**/*.spec.js"
     }
 }
