@@ -81,6 +81,30 @@ export class TreeSitterDocument {
         return this._document.getText(range);
     }
 
+    public getWordRangeAtPosition(position: Position): Range | null {
+        const identifierRegex = /[a-zA-Z0-9_]/;
+
+        const line = this.getText(Range.create(position.line, 0, position.line + 1, 0));
+
+        let start = position.character;
+        let end = position.character;
+
+        // Make sure the cursor is on an identifier
+        if (!identifierRegex.test(line[start])) {
+            return null;
+        }
+
+        while (start > 0 && identifierRegex.test(line[start - 1])) {
+            start--;
+        }
+
+        while (end < line.length - 1 && identifierRegex.test(line[end + 1])) {
+            end++;
+        }
+
+        return Range.create(position.line, start, position.line, end);
+    }
+
     public getNodeAtPosition(position: Position): Parser.SyntaxNode | null {
         if (this._tree === null) {
             return null;
