@@ -1,5 +1,5 @@
-import Parser = require('web-tree-sitter');
-import path = require("path");
+import * as Parser from 'web-tree-sitter';
+import * as path from "path";
 import { TextDocumentContentChangeEvent, Range, Position } from 'vscode-languageserver/node';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 
@@ -87,6 +87,14 @@ export class TreeSitterDocument {
         }
 
         return smallestDescendantForPosition(this._tree.rootNode, position);
+    }
+
+    public dumpTree(): string {
+        if (this._tree === null) {
+            return "";
+        }
+
+        return this._tree.rootNode.toString()
     }
 };
 
