@@ -30,46 +30,13 @@ import {
 } from 'vscode-languageserver/node';
 
 import { URI } from 'vscode-uri';
-import { withFile } from 'tmp-promise'
-import path = require('path');
-import { access as fsAccess, constants as fsConstants } from 'fs';
-import util = require("util");
-import { spawn } from 'child_process';
-import { symbolsInScope, Symbol } from './teal';
+import * as path from "path";
+import { Teal } from './teal';
 import { pointToPosition, positionInNode, positionToPoint, TreeSitterDocument } from './tree-sitter-document'
 import { SyntaxNode } from 'web-tree-sitter';
-
-interface TLCommandIOInfo {
-	filePath: string | null,
-	stdout: string,
-	stderr: string
-};
-
-enum TLCommand {
-	Check = "check",
-	Types = "types",
-	Version = "--version"
-};
-
-interface TLTypesCommandResult {
-	ioInfo: TLCommandIOInfo,
-	json: any
-}
-
-interface TLTypeInfo {
-	location: Location | null,
-	name: string
-};
-
-function fileExists(filePath: string): Promise<boolean> {
-	return new Promise((resolve, reject) => {
-		fsAccess(filePath, fsConstants.F_OK, function (error) {
-			resolve(error === null);
-		});
-	});
-}
-
-const write = util.promisify(require("fs").write);
+import { fileExists } from './file-utils';
+import { TealLS } from './diagnostics';
+import { isEmptyOrSpaces } from './string-utils';
 
 const documents: Map<string, TreeSitterDocument> = new Map();
 
@@ -146,10 +113,10 @@ let globalSettings: TealServerSettings = defaultSettings;
 let settingsCache: Map<string, Thenable<TealServerSettings>> = new Map();
 
 // Cache "tl types" queries of all open documents
-let typesCommandCache: Map<string, TLTypesCommandResult> = new Map();
+let typesCommandCache: Map<string, Teal.TLTypesCommandResult> = new Map();
 
 async function verifyMinimumTLVersion(settings: TealServerSettings) {
-	const tlVersion = await getTLVersion(settings);
+	const tlVersion = await Teal.getVersion();
 
 	if (tlVersion !== null) {
 		console.log(`tl version: ${tlVersion.major}.${tlVersion.minor}.${tlVersion.patch}`);
@@ -249,34 +216,6 @@ function throttle(threshold: number, fn: (arg: string) => Promise<null | undefin
 	};
 }
 
-interface MajorMinorPatch {
-	major: number,
-	minor: number,
-	patch: number
-}
-
-async function getTLVersion(settings: TealServerSettings): Promise<MajorMinorPatch | null> {
-	const commandResult = await runTLCommand(TLCommand.Version, null, settings);
-
-	const majorMinorPatch = commandResult.stdout.match(/(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)/);
-
-	if (majorMinorPatch === null) {
-		return null;
-	}
-
-	const groups = majorMinorPatch.groups!;
-
-	return {
-		major: Number.parseInt(groups.major),
-		minor: Number.parseInt(groups.minor),
-		patch: Number.parseInt(groups.patch)
-	};
-}
-
-function isEmptyOrSpaces(str: string) {
-	return (str == null || str.trim() === '');
-}
-
 async function _feedTypeInfoCache(uri: string) {
 	const textDocument = documents.get(uri);
 
@@ -288,7 +227,14 @@ async function _feedTypeInfoCache(uri: string) {
 
 	const documentText = textDocument.getText();
 
-	const typesCmdResult = await runTLCommandOnText(TLCommand.Types, documentText, settings);
+	let typesCmdResult: Teal.TLCommandIOInfo;
+
+	try {
+		typesCmdResult = await Teal.runCommandOnText(Teal.TLCommand.Types, documentText);
+	} catch(error) {
+		showErrorMessage("[Error]\n" + error.message);
+		return null;
+	};
 
 	if (typesCmdResult === null) {
 		return null;
@@ -317,7 +263,7 @@ async function _feedTypeInfoCache(uri: string) {
 
 const feedTypeInfoCache = throttle(250, _feedTypeInfoCache);
 
-function getTypeInfoFromCache(uri: string): TLTypesCommandResult | null {
+function getTypeInfoFromCache(uri: string): Teal.TLTypesCommandResult | null {
 	const cachedResult = typesCommandCache.get(uri);
 
 	if (cachedResult === undefined) {
@@ -328,10 +274,6 @@ function getTypeInfoFromCache(uri: string): TLTypesCommandResult | null {
 }
 
 connection.onDidOpenTextDocument(async (params) => {
-	// A text document got opened in VS Code.
-	// params.uri uniquely identifies the document. For documents store on disk this is a file URI.
-	// params.text the initial full content of the document.
-
 	const settings = await getDocumentSettings(params.textDocument.uri);
 	verifyMinimumTLVersion(settings);
 
@@ -342,9 +284,6 @@ connection.onDidOpenTextDocument(async (params) => {
 });
 
 connection.onDidChangeTextDocument((params) => {
-	// The content of a text document did change in VS Code.
-	// params.uri uniquely identifies the document.
-	// params.contentChanges describe the content changes to the document.
 	const uri = params.textDocument.uri;
 
 	const document = documents.get(uri);
@@ -389,12 +328,8 @@ connection.onDidChangeWatchedFiles(_change => {
 	}
 });
 
-class TLNotFoundError extends Error { /* ... */ }
-
-const tmpBufferPrefix = "__tl__tmp__check-";
-
-async function pathInWorkspace(textDocument: TreeSitterDocument, pathToCheck: string): Promise<string | null> {
-	if (path.basename(pathToCheck).startsWith(tmpBufferPrefix)) {
+export async function pathInWorkspace(textDocument: TreeSitterDocument, pathToCheck: string): Promise<string | null> {
+	if (path.basename(pathToCheck).startsWith(Teal.TmpBufferPrefix)) {
 		return textDocument.uri
 	}
 
@@ -419,77 +354,6 @@ async function pathInWorkspace(textDocument: TreeSitterDocument, pathToCheck: st
 	return resolvedPath;
 }
 
-/**
- * Runs a `tl` command on a specific text.
- */
-async function runTLCommandOnText(command: TLCommand, text: string, settings: TealServerSettings): Promise<TLCommandIOInfo | null> {
-	try {
-		return await withFile(async ({ path, fd }) => {
-			await write(fd, text);
-
-			try {
-				let result = await runTLCommand(command, path, settings);
-				return result;
-			} catch (error) {
-				throw error;
-			}
-		}, { prefix: tmpBufferPrefix });
-	} catch (error) {
-		await showErrorMessage(error.message);
-		return null;
-	}
-}
-
-async function runTLCommand(command: TLCommand, filePath: string | null, settings: TealServerSettings): Promise<TLCommandIOInfo> {
-	let child: any;
-
-	let platform = process.platform;
-
-	if (platform == "win32") {
-		let args = ['/c', "tl.bat", "-q", command];
-
-		if (filePath !== null) {
-			args.push(filePath);
-		}
-
-		child = spawn('cmd.exe', args);
-	} else {
-		let args = ["-q", command];
-
-		if (filePath !== null) {
-			args.push(filePath);
-		}
-
-		child = spawn("tl", args);
-	}
-
-	return await new Promise(async function (resolve, reject) {
-		let stdout = "";
-		let stderr = "";
-
-		child.on('error', function (error: any) {
-			if (error.code === 'ENOENT') {
-				let errorMessage = "Could not find the tl executable. Please make sure that it is available in the PATH.";
-				reject(new TLNotFoundError(errorMessage));
-			} else {
-				reject(error);
-			}
-		});
-
-		child.on('close', function (exitCode: any) {
-			resolve({ filePath: filePath, stdout: stdout, stderr: stderr });
-		});
-
-		for await (const chunk of child.stdout) {
-			stdout += chunk;
-		}
-
-		for await (const chunk of child.stderr) {
-			stderr += chunk;
-		}
-	});
-}
-
 async function _validateTextDocument(uri: string): Promise<void> {
 	const textDocument: TreeSitterDocument | undefined = documents.get(uri);
 
@@ -499,76 +363,17 @@ async function _validateTextDocument(uri: string): Promise<void> {
 
 	let settings = await getDocumentSettings(textDocument.uri);
 
-	let checkResult = await runTLCommandOnText(TLCommand.Check, textDocument.getText(), settings);
-
-	if (checkResult === null) {
-		connection.sendDiagnostics({ uri: textDocument.uri, diagnostics: [] });
+	try {
+		const diagnosticsByPath = await TealLS.validateTextDocument(textDocument);
+	
+		for (let [uri, diagnostics] of Object.entries(diagnosticsByPath)) {
+			connection.sendDiagnostics({ uri: uri, diagnostics: diagnostics });
+		}
+	} catch(error) {
+		showErrorMessage("[Error]\n" + error.message);
 		return;
 	}
 
-	let crashPattern = /stack traceback:/m;
-
-	if (crashPattern.test(checkResult.stderr)) {
-		connection.sendDiagnostics({ uri: textDocument.uri, diagnostics: [] });
-		showErrorMessage("[Error]\n" + checkResult.stderr);
-		return;
-	}
-
-	let errorPattern = /(?<fileName>^.*?):(?<lineNumber>\d+):((?<columnNumber>\d+):)? (?<errorMessage>.+)$/gm;
-
-	let diagnosticsByPath: { [id: string]: Diagnostic[] } = {};
-	diagnosticsByPath[textDocument.uri] = [];
-
-	let syntaxError: RegExpExecArray | null;
-
-	while ((syntaxError = errorPattern.exec(checkResult.stderr))) {
-		const groups = syntaxError.groups!;
-
-		let errorPath = path.normalize(groups.fileName);
-		let fullPath = await pathInWorkspace(textDocument, errorPath);
-
-		if (fullPath === null) {
-			continue;
-		}
-
-		let lineNumber = Number.parseInt(groups.lineNumber) - 1;
-		let columnNumber = Number.MAX_VALUE;
-
-		if (groups.columnNumber !== undefined) {
-			columnNumber = Number.parseInt(groups.columnNumber) - 1
-		}
-
-		let errorMessage = groups.errorMessage;
-
-		// Avoid showing the temporary file's name in the error message
-		errorMessage = errorMessage.replace(errorPath, fullPath);
-
-		let range = Range.create(lineNumber, columnNumber, lineNumber, columnNumber);
-
-		let diagnostic: Diagnostic = {
-			severity: DiagnosticSeverity.Error,
-			range: range,
-			message: errorMessage,
-			source: 'tl check'
-		};
-
-		if (hasDiagnosticRelatedInformationCapability) {
-			// TODO?
-		}
-
-		let arr = diagnosticsByPath[fullPath];
-
-		if (arr) {
-			arr.push(diagnostic);
-		} else {
-			diagnosticsByPath[fullPath] = [diagnostic];
-		}
-	}
-
-	// Send the computed diagnostics to VSCode.
-	for (let [uri, diagnostics] of Object.entries(diagnosticsByPath)) {
-		connection.sendDiagnostics({ uri: uri, diagnostics: diagnostics });
-	}
 }
 
 const validateTextDocument = debounce(500, _validateTextDocument);
@@ -596,7 +401,7 @@ function findNodeAbove(baseNode: SyntaxNode, type: string): SyntaxNode | null {
 /**
  * Given an index node, get the type info in json format of the before-last node
  */
-function walkMultiSym2(node: SyntaxNode, typeInfo: TLTypesCommandResult, symbols: Map<string, Symbol>): any | null {
+function walkMultiSym2(node: SyntaxNode, typeInfo: Teal.TLTypesCommandResult, symbols: Map<string, Teal.Symbol>): any | null {
 	let indexNode = findNodeAbove(node, "index");
 
 	if (indexNode === null) {
@@ -734,7 +539,7 @@ function walkMultiSym2(node: SyntaxNode, typeInfo: TLTypesCommandResult, symbols
 	return typeRef;
 }
 
-function getTypeById(typeInfo: TLTypesCommandResult, typeId: number): any | null {
+function getTypeById(typeInfo: Teal.TLTypesCommandResult, typeId: number): any | null {
 	let typeDefinition: any | undefined = typeInfo.json?.["types"]?.[typeId];
 
 	if (typeDefinition === undefined) {
@@ -759,6 +564,13 @@ async function autoComplete(textDocumentPositionParams: TextDocumentPositionPara
 		return [];
 	}
 
+	if (nodeAtPosition.type === "ERROR") {
+		// try the previous node instead?
+		if (nodeAtPosition.previousNamedSibling !== null) {
+			nodeAtPosition = nodeAtPosition.previousNamedSibling;
+		}
+	}
+
 	const isType = findNodeAbove(nodeAtPosition, "type_annotation") !== null
 		|| findNodeAbove(nodeAtPosition, "type") !== null
 		|| findNodeAbove(nodeAtPosition, "table_type") !== null
@@ -772,7 +584,7 @@ async function autoComplete(textDocumentPositionParams: TextDocumentPositionPara
 		return [];
 	}
 
-	let symbols = symbolsInScope(typeInfo.json, position.line + 1, position.character + 1);
+	let symbols = Teal.symbolsInScope(typeInfo.json, position.line + 1, position.character + 1);
 
 	let indexType = walkMultiSym2(nodeAtPosition, typeInfo, symbols);
 
@@ -941,7 +753,7 @@ function getSymbolParts(parentNode: SyntaxNode): Array<string> {
 
 	while (ptr.firstChild !== null) {
 		if (ptr.type === "index" || ptr.type === "method_index") {
-			let field = ptr.lastChild!;
+			let field = ptr.childForFieldName("key")!;
 
 			result.push(field.text);
 		}
@@ -989,7 +801,7 @@ async function signatureHelp(textDocumentPosition: TextDocumentPositionParams, t
 		return null;
 	}
 
-	const symbols = symbolsInScope(typeInfo.json, position.line + 1, position.character + 1);
+	const symbols = Teal.symbolsInScope(typeInfo.json, position.line + 1, position.character + 1);
 
 	if (symbols === null) {
 		return null;
@@ -1054,6 +866,11 @@ function getWordRangeAtPosition(document: TreeSitterDocument, position: Position
 
 	return Range.create(position.line, start, position.line, end);
 }
+
+export interface TLTypeInfo {
+	location: Location | null,
+	name: string
+};
 
 async function getTypeInfoAtPosition(uri: string, position: Position): Promise<TLTypeInfo | null> {
 	const textDocument = documents.get(uri);
