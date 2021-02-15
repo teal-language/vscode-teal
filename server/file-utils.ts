@@ -1,5 +1,6 @@
 import { access as fsAccess, constants as fsConstants } from 'fs';
 import { promisify } from "util";
+import * as fs from "fs";
 
 export function fileExists(filePath: string): Promise<boolean> {
     return new Promise((resolve, reject) => {
@@ -9,4 +10,4 @@ export function fileExists(filePath: string): Promise<boolean> {
     });
 }
 
-export const writeFile = promisify(require("fs").write);
+export const writeFile = promisify(fs.write);

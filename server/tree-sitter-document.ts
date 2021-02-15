@@ -184,3 +184,23 @@ export function smallestDescendantForPosition(rootNode: Parser.SyntaxNode, posit
 
     return min
 }
+
+export function findNodeAbove(baseNode: Parser.SyntaxNode, type: string): Parser.SyntaxNode | null {
+	let ptr: Parser.SyntaxNode | null = baseNode;
+
+	while (ptr !== null) {
+		if (ptr.type === type) {
+			return ptr;
+		}
+
+		const fieldNode = ptr.childForFieldName(type);
+
+		if (fieldNode != null) {
+			return fieldNode;
+		}
+
+		ptr = ptr.parent;
+	}
+
+	return null;
+}

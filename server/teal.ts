@@ -1,8 +1,35 @@
 import { withFile } from 'tmp-promise'
 import { spawn } from 'child_process';
 import { writeFile } from './file-utils';
+import { Location } from 'vscode-languageserver/node';
 
 export namespace Teal {
+    class TLNotFoundError extends Error { /* ... */ }
+
+    export const TmpBufferPrefix = "__tl__tmp__check-";
+
+    export interface TLCommandIOInfo {
+        filePath: string | null,
+        stdout: string,
+        stderr: string
+    };
+
+    export enum TLCommand {
+        Check = "check",
+        Types = "types",
+        Version = "--version"
+    };
+
+    export interface TLTypesCommandResult {
+        ioInfo: TLCommandIOInfo,
+        json: any
+    }
+
+    export interface TLTypeInfo {
+        location: Location | null,
+        name: string
+    };
+    
     type FileName = string;
     type TypeId = number;
 
@@ -111,29 +138,7 @@ export namespace Teal {
 
         return result
     }
-
-
-    class TLNotFoundError extends Error { /* ... */ }
-
-    export const TmpBufferPrefix = "__tl__tmp__check-";
-
-    export interface TLCommandIOInfo {
-        filePath: string | null,
-        stdout: string,
-        stderr: string
-    };
-
-    export enum TLCommand {
-        Check = "check",
-        Types = "types",
-        Version = "--version"
-    };
-
-    export interface TLTypesCommandResult {
-        ioInfo: TLCommandIOInfo,
-        json: any
-    }
-
+    
     /**
      * Runs a `tl` command on a specific text.
      */
