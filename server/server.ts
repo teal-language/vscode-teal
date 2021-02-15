@@ -36,7 +36,7 @@ import { pointToPosition, positionInNode, positionToPoint, TreeSitterDocument } 
 import { SyntaxNode } from 'web-tree-sitter';
 import { fileExists } from './file-utils';
 import { TealLS } from './diagnostics';
-import { isEmptyOrSpaces } from './string-utils';
+import { isEmptyOrSpaces } from './text-utils';
 
 const documents: Map<string, TreeSitterDocument> = new Map();
 
@@ -842,31 +842,6 @@ async function signatureHelp(textDocumentPosition: TextDocumentPositionParams, t
 
 connection.onSignatureHelp(signatureHelp);
 
-const identifierRegex = /[a-zA-Z0-9_]/;
-
-function getWordRangeAtPosition(document: TreeSitterDocument, position: Position): Range | null {
-	// Get text on current line
-	let str = document.getText(Range.create(position.line, 0, position.line, position.character));
-
-	let start = position.character;
-	let end = position.character;
-
-	// Make sure the cursor is on an identifier
-	if (!identifierRegex.test(str[start])) {
-		return null;
-	}
-
-	while (start > 0 && identifierRegex.test(str[start - 1])) {
-		start--;
-	}
-
-	while (end < str.length - 1 && identifierRegex.test(str[end + 1])) {
-		end++;
-	}
-
-	return Range.create(position.line, start, position.line, end);
-}
-
 export interface TLTypeInfo {
 	location: Location | null,
 	name: string
@@ -888,7 +863,7 @@ async function getTypeInfoAtPosition(uri: string, position: Position): Promise<T
 	const tmpPath = typeInfo.ioInfo.filePath!;
 	const typesJson = typeInfo.json;
 
-	let wordRange = getWordRangeAtPosition(textDocument, position);
+	let wordRange = textDocument.getWordRangeAtPosition(position);
 
 	if (wordRange === null) {
 		return null;
