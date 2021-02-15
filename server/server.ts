@@ -5,8 +5,6 @@
 
 import {
 	createConnection,
-	Diagnostic,
-	DiagnosticSeverity,
 	ProposedFeatures,
 	InitializeParams,
 	DidChangeConfigurationNotification,
@@ -20,7 +18,6 @@ import {
 	MessageType,
 	ShowMessageRequest,
 	Location,
-	TextDocumentIdentifier,
 	Position,
 	MarkupKind,
 	CancellationToken,
@@ -371,6 +368,7 @@ async function _validateTextDocument(uri: string): Promise<void> {
 		}
 	} catch(error) {
 		showErrorMessage("[Error]\n" + error.message);
+		connection.sendDiagnostics({ uri: uri, diagnostics: [] });
 		return;
 	}
 
@@ -416,8 +414,6 @@ function walkMultiSym2(node: SyntaxNode, typeInfo: Teal.TLTypesCommandResult, sy
 		}
 	}
 
-	console.log("Index node:", indexNode.text);
-
 	let ptr: SyntaxNode | null;
 
 	if (indexNode.childCount === 0) {
@@ -460,11 +456,7 @@ function walkMultiSym2(node: SyntaxNode, typeInfo: Teal.TLTypesCommandResult, sy
 		return rootType;
 	}
 
-	console.log("Getting the symbols parts");
-
 	const symbolParts = getSymbolParts(indexNode);
-
-	console.log("Got the parts:", symbolParts);
 
 	let typeRef = rootType;
 
@@ -475,8 +467,6 @@ function walkMultiSym2(node: SyntaxNode, typeInfo: Teal.TLTypesCommandResult, sy
 		// it depends on the type of the current one
 
 		let childTypeId: any | undefined;
-
-		console.log("Type code:", typeRef["t"])
 
 		// is it a record? if so, check in fields
 		if (typeRef["t"] === 0x00020008) {
@@ -533,8 +523,6 @@ function walkMultiSym2(node: SyntaxNode, typeInfo: Teal.TLTypesCommandResult, sy
 
 		typeRef = childType;
 	}
-
-	console.log("Type at the tip:", typeRef);
 
 	return typeRef;
 }
@@ -748,8 +736,6 @@ function getSymbolParts(parentNode: SyntaxNode): Array<string> {
 	const result = new Array<string>();
 
 	let ptr: SyntaxNode | null = parentNode;
-
-	console.log("This the parent node:", parentNode.text);
 
 	while (ptr.firstChild !== null) {
 		if (ptr.type === "index" || ptr.type === "method_index") {
