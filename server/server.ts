@@ -29,7 +29,7 @@ import {
 import { URI } from 'vscode-uri';
 import * as path from "path";
 import { Teal } from './teal';
-import { pointToPosition, positionInNode, positionToPoint, TreeSitterDocument } from './tree-sitter-document'
+import { findNodeAbove, pointToPosition, positionInNode, positionToPoint, TreeSitterDocument } from './tree-sitter-document'
 import { SyntaxNode } from 'web-tree-sitter';
 import { fileExists } from './file-utils';
 import { TealLS } from './diagnostics';
@@ -37,31 +37,22 @@ import { isEmptyOrSpaces } from './text-utils';
 
 const documents: Map<string, TreeSitterDocument> = new Map();
 
-// Create a connection for the server. The connection uses Node's IPC as a transport.
-// Also include all preview / proposed LSP features.
 let connection = createConnection(ProposedFeatures.all);
 
 let hasConfigurationCapability = false;
 let hasWorkspaceFolderCapability = false;
-let hasDiagnosticRelatedInformationCapability = false;
 
 connection.onInitialize((params: InitializeParams) => {
 	let capabilities = params.capabilities;
 
-	// Does the client support the `workspace/configuration` request?
-	// If not, we will fall back using global settings
-	hasConfigurationCapability = !!(
-		capabilities.workspace && !!capabilities.workspace.configuration
+	hasConfigurationCapability = (
+		capabilities.workspace !== undefined 
+		&& capabilities.workspace.configuration === true
 	);
 
-	hasWorkspaceFolderCapability = !!(
-		capabilities.workspace && !!capabilities.workspace.workspaceFolders
-	);
-
-	hasDiagnosticRelatedInformationCapability = !!(
-		capabilities.textDocument &&
-		capabilities.textDocument.publishDiagnostics &&
-		capabilities.textDocument.publishDiagnostics.relatedInformation
+	hasWorkspaceFolderCapability = (
+		capabilities.workspace !== undefined
+		&& capabilities.workspace.workspaceFolders === true
 	);
 
 	return {
@@ -86,7 +77,6 @@ connection.onInitialize((params: InitializeParams) => {
 
 connection.onInitialized(() => {
 	if (hasConfigurationCapability) {
-		// Register for all configuration changes.
 		connection.client.register(DidChangeConfigurationNotification.type, undefined);
 	}
 
@@ -99,20 +89,17 @@ connection.onInitialized(() => {
 
 interface TealServerSettings { };
 
-// The global settings, used when the `workspace/configuration` request is not supported by the client.
-// Please note that this is not the case when using this server with the client provided in this example
-// but could happen with other clients.
 const defaultSettings: TealServerSettings = {};
 
 let globalSettings: TealServerSettings = defaultSettings;
 
 // Cache the settings of all open documents
-let settingsCache: Map<string, Thenable<TealServerSettings>> = new Map();
+let settingsCache: Map<string, TealServerSettings> = new Map();
 
 // Cache "tl types" queries of all open documents
 let typesCommandCache: Map<string, Teal.TLTypesCommandResult> = new Map();
 
-async function verifyMinimumTLVersion(settings: TealServerSettings) {
+async function verifyMinimumTLVersion() {
 	const tlVersion = await Teal.getVersion();
 
 	if (tlVersion !== null) {
@@ -139,27 +126,29 @@ connection.onDidChangeConfiguration((change) => {
 
 	// Revalidate all open text documents
 	documents.forEach(async function (x: TreeSitterDocument) {
-		const settings = await getDocumentSettings(x.uri);
-
-		verifyMinimumTLVersion(settings);
+		verifyMinimumTLVersion();
 		validateTextDocument(x.uri);
 	});
 
 	typesCommandCache.clear();
 });
 
-function getDocumentSettings(uri: string): Thenable<TealServerSettings> {
+async function getDocumentSettings(uri: string): Promise<TealServerSettings | null> {
 	if (!hasConfigurationCapability) {
 		return Promise.resolve(globalSettings);
 	}
 
 	let result = settingsCache.get(uri);
 
-	if (!result) {
-		result = connection.workspace.getConfiguration({
+	if (result === undefined) {
+		result = await connection.workspace.getConfiguration({
 			scopeUri: uri,
 			section: 'teal'
 		});
+
+		if (result === undefined) {
+			return null;
+		}
 
 		settingsCache.set(uri, result);
 	}
@@ -271,8 +260,7 @@ function getTypeInfoFromCache(uri: string): Teal.TLTypesCommandResult | null {
 }
 
 connection.onDidOpenTextDocument(async (params) => {
-	const settings = await getDocumentSettings(params.textDocument.uri);
-	verifyMinimumTLVersion(settings);
+	verifyMinimumTLVersion();
 
 	const treeSitterDocument = new TreeSitterDocument();
 	await treeSitterDocument.init(params.textDocument.uri, params.textDocument.text);
@@ -315,7 +303,6 @@ async function showErrorMessage(message: string, ...actions: MessageActionItem[]
 	return await connection.sendRequest(ShowMessageRequest.type, params);
 }
 
-// Monitored files have changed in VS Code
 connection.onDidChangeWatchedFiles(_change => {
 	for (let [uri, document] of documents) {
 		validateTextDocument(uri);
@@ -375,26 +362,6 @@ async function _validateTextDocument(uri: string): Promise<void> {
 }
 
 const validateTextDocument = debounce(500, _validateTextDocument);
-
-function findNodeAbove(baseNode: SyntaxNode, type: string): SyntaxNode | null {
-	let ptr: SyntaxNode | null = baseNode;
-
-	while (ptr !== null) {
-		if (ptr.type === type) {
-			return ptr;
-		}
-
-		const fieldNode = ptr.childForFieldName(type);
-
-		if (fieldNode != null) {
-			return fieldNode;
-		}
-
-		ptr = ptr.parent;
-	}
-
-	return null;
-}
 
 /**
  * Given an index node, get the type info in json format of the before-last node
@@ -828,12 +795,7 @@ async function signatureHelp(textDocumentPosition: TextDocumentPositionParams, t
 
 connection.onSignatureHelp(signatureHelp);
 
-export interface TLTypeInfo {
-	location: Location | null,
-	name: string
-};
-
-async function getTypeInfoAtPosition(uri: string, position: Position): Promise<TLTypeInfo | null> {
+async function getTypeInfoAtPosition(uri: string, position: Position): Promise<Teal.TLTypeInfo | null> {
 	const textDocument = documents.get(uri);
 
 	if (textDocument === undefined) {
@@ -954,5 +916,4 @@ connection.onHover(async function (params) {
 	};
 });
 
-// Listen on the connection
 connection.listen();
