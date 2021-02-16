@@ -1,3 +1,7 @@
+### 0.7.0 - February 16 2021
+
+This release adds support for . and : auto-completions. Also, the server now tries to filter the suggestions depending on context (for instance, function symbols should not appear in the suggestions when typing a type annotation)
+
 ### 0.6.3 - February 08 2021
 
 Get rid of `Teal > Compiler Path` setting, as it was misleading and caused some issues (for instance, `LUA_PATH` could take precedence over this setting)
