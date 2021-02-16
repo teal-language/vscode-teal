@@ -12,17 +12,17 @@ async function getTestDocument(text: string) {
 }
 
 export function findNodeAbove(baseNode: SyntaxNode, type: string[]): SyntaxNode | null {
-	let ptr: SyntaxNode | null = baseNode;
+    let ptr: SyntaxNode | null = baseNode;
 
-	while (ptr !== null) {
-		if (type.includes(ptr.type)) {
-			return ptr;
-		}
+    while (ptr !== null) {
+        if (type.includes(ptr.type)) {
+            return ptr;
+        }
 
-		ptr = ptr.parent;
-	}
+        ptr = ptr.parent;
+    }
 
-	return null;
+    return null;
 }
 
 export function findNodeBeforeOrBelow(rootNode: SyntaxNode, type: string[], ignore: string[] = []): SyntaxNode | null {
@@ -63,36 +63,41 @@ export function findNodeBeforeOrBelow(rootNode: SyntaxNode, type: string[], igno
     return null;
 }
 
+/**
+ * Note: includes the root in the descendants list (FIXME?)
+ */
 function descendantsOfTypes(rootNode: SyntaxNode, type: string[], ignore: string[] = []): SyntaxNode[] {
     let result: SyntaxNode[] = [];
 
-    console.log("Looping through descendents", rootNode.namedChildCount);
+    if (type.includes(rootNode.type)) {
+        result.push(rootNode);
+    }
 
     for (let i = 0; i < rootNode.namedChildren.length; ++i) {
         const child = rootNode.namedChildren[i];
 
-        if (type.includes(child.type) && !ignore.includes(child.type)) {
-            result.push(child);
-        }
+        if (!ignore.includes(child.type)) {
+            let subChildren = descendantsOfTypes(child, type, ignore);
 
-        let subChildren = descendantsOfTypes(child, type, ignore);
-
-        if (subChildren.length > 0) {
-            result = result.concat(subChildren);
+            if (subChildren.length > 0) {
+                result = result.concat(subChildren);
+            }
         }
     }
 
     /* let sibling = rootNode.nextNamedSibling;
 
     while (sibling !== null) {
-        if (type.includes(sibling.type) && !ignore.includes(sibling.type)) {
-            result.push(sibling);
-        }
+        if (!ignore.includes(sibling.type)) {
+            if (type.includes(sibling.type)) {
+                result.push(sibling);
+            }
 
-        let subChildren = descendantsOfTypes(sibling, type, ignore);
+            let subChildren = descendantsOfTypes(sibling, type, ignore);
 
-        if (subChildren.length > 0) {
-            result = result.concat(subChildren)
+            if (subChildren.length > 0) {
+                result = result.concat(subChildren);
+            }
         }
 
         sibling = sibling.nextNamedSibling;
@@ -102,13 +107,13 @@ function descendantsOfTypes(rootNode: SyntaxNode, type: string[], ignore: string
 }
 
 function findIndexRootAtPosition(document: TreeSitterDocument, line: number, column: number): SyntaxNode | null {
-    const nodeAtPosition = document.getNodeAtPosition({line: line, character: column});
+    const nodeAtPosition = document.getNodeAtPosition({ line: line, character: column });
 
     assert(nodeAtPosition !== null);
 
     let indexRoot: SyntaxNode | null;
 
-    if (nodeAtPosition.type === "ERROR" && (nodeAtPosition.text.endsWith(".") || nodeAtPosition.text.endsWith(":")))  {
+    if (nodeAtPosition.type === "ERROR" && (nodeAtPosition.text.endsWith(".") || nodeAtPosition.text.endsWith(":"))) {
         indexRoot = findNodeBeforeOrBelow(nodeAtPosition, ["index", "method_index", "identifier"]);
     } else {
         indexRoot = findNodeAbove(nodeAtPosition, ["index", "method_index"]);
@@ -120,14 +125,14 @@ function findIndexRootAtPosition(document: TreeSitterDocument, line: number, col
 /**
  * Find every identifier before the cursor in a complex expression.
  * For instance, in the expression `abc.efg().hij|` where | is the cursor, the result would be an array containing [abc, efg].
- * We can then use this array to determine the type of every part in a complex expression, for autocompletion purposes or for signature hints.
+ * We can then use this array to determine the type of every part in a complex expression, for autocompletion purposes or for displaying signature hints.
  */
 function getSymbolParts(node: SyntaxNode, line: number, column: number): string[] {
     const result: string[] = [];
 
-    node.descendantsOfType("identifier")
+    descendantsOfTypes(node, ["identifier"], ["arguments"])
         .forEach(x => {
-            if (x.endPosition.column < column) { 
+            if (x.endPosition.column < column) {
                 result.push(x.text);
             }
         });
@@ -146,9 +151,8 @@ function debugNode(doc: TreeSitterDocument, node: SyntaxNode) {
     }
 }
 
-describe("Splitting an expression into parts", () =>{
-    it('works with partial input after a single ":"', async () =>
-    {
+describe("Splitting an expression into parts", () => {
+    it('works with partial input after a single ":"', async () => {
         const code = `abc:`;
         const doc = await getTestDocument(code);
 
@@ -158,8 +162,7 @@ describe("Splitting an expression into parts", () =>{
 
         assert.deepStrictEqual(getSymbolParts(indexRoot, 0, 4), ["abc"]);
     });
-    it('works with partial input after a single "."', async () =>
-    {
+    it('works with partial input after a single "."', async () => {
         const code = `abc.`;
         const doc = await getTestDocument(code);
 
@@ -169,8 +172,7 @@ describe("Splitting an expression into parts", () =>{
 
         assert.deepStrictEqual(getSymbolParts(indexRoot, 0, 4), ["abc"]);
     });
-    it('works with partial input after a second "."', async () =>
-    {
+    it('works with partial input after a second "."', async () => {
         const code = `abc.efg.`;
         const doc = await getTestDocument(code);
 
@@ -180,8 +182,7 @@ describe("Splitting an expression into parts", () =>{
 
         assert.deepStrictEqual(getSymbolParts(indexRoot, 0, 8), ["abc", "efg"]);
     });
-    it('works with complete input after a second "."', async () =>
-    {
+    it('works with complete input after a second "."', async () => {
         const code = `abc.efg.hij`;
         const doc = await getTestDocument(code);
 
@@ -191,8 +192,7 @@ describe("Splitting an expression into parts", () =>{
 
         assert.deepStrictEqual(getSymbolParts(indexRoot, 0, 11), ["abc", "efg"]);
     });
-    it('works with partial input after a ".", after a function call', async () =>
-    {
+    it('works with partial input after a ".", after a function call', async () => {
         const code = `abc().`;
         const doc = await getTestDocument(code);
 
@@ -202,8 +202,7 @@ describe("Splitting an expression into parts", () =>{
 
         assert.deepStrictEqual(getSymbolParts(indexRoot, 0, 6), ["abc"]);
     });
-    it('works with partial input after a ".", next to a function call with arguments', async () =>
-    {
+    it('works with partial input after a ".", next to a function call with arguments', async () => {
         const code = `abc(def, ghi.jkl).mno.`;
         const doc = await getTestDocument(code);
 
@@ -213,8 +212,7 @@ describe("Splitting an expression into parts", () =>{
 
         assert.deepStrictEqual(getSymbolParts(indexRoot, 0, 22), ["abc", "mno"]);
     });
-    it('works with partial input after a ".", inside a function call', async () =>
-    {
+    it('works with partial input after a ".", inside a function call', async () => {
         const code = `abc(def, ghi.).mno`;
         const doc = await getTestDocument(code);
 
