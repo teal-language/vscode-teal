@@ -50,16 +50,6 @@ export function findNodeBeforeOrBelow(rootNode: SyntaxNode, type: string[], igno
         sibling = sibling.previousNamedSibling;
     }
 
-    /* sibling = rootNode.nextNamedSibling;
-
-    while (sibling !== null) {
-        if (type.includes(sibling.type)) {
-            return sibling;
-        }
-
-        sibling = sibling.nextNamedSibling;
-    } */
-
     return null;
 }
 
@@ -84,24 +74,6 @@ function descendantsOfTypes(rootNode: SyntaxNode, type: string[], ignore: string
             }
         }
     }
-
-    /* let sibling = rootNode.nextNamedSibling;
-
-    while (sibling !== null) {
-        if (!ignore.includes(sibling.type)) {
-            if (type.includes(sibling.type)) {
-                result.push(sibling);
-            }
-
-            let subChildren = descendantsOfTypes(sibling, type, ignore);
-
-            if (subChildren.length > 0) {
-                result = result.concat(subChildren);
-            }
-        }
-
-        sibling = sibling.nextNamedSibling;
-    } */
 
     return result;
 }
@@ -221,5 +193,15 @@ describe("Splitting an expression into parts", () => {
         assert(indexRoot !== null);
 
         assert.deepStrictEqual(getSymbolParts(indexRoot, 0, 13), ["ghi"]);
+    });
+    it('works with partial input after an array access', async () => {
+        const code = `abc[1].`;
+        const doc = await getTestDocument(code);
+
+        const indexRoot = findIndexRootAtPosition(doc, 0, 7);
+
+        assert(indexRoot !== null);
+
+        assert.deepStrictEqual(getSymbolParts(indexRoot, 0, 7), ["abc"]);
     });
 });
