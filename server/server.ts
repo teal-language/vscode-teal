@@ -29,11 +29,12 @@ import {
 import { URI } from 'vscode-uri';
 import * as path from "path";
 import { Teal } from './teal';
-import { findNodeAbove, pointToPosition, positionInNode, positionToPoint, TreeSitterDocument } from './tree-sitter-document'
+import { findNodeOrFieldAbove, pointToPosition, positionInNode, positionToPoint, TreeSitterDocument } from './tree-sitter-document'
 import { SyntaxNode } from 'web-tree-sitter';
 import { fileExists } from './file-utils';
 import { TealLS } from './diagnostics';
 import { isEmptyOrSpaces } from './text-utils';
+import { autoComplete } from './intellisense';
 
 const documents: Map<string, TreeSitterDocument> = new Map();
 
@@ -249,7 +250,7 @@ async function _feedTypeInfoCache(uri: string) {
 
 const feedTypeInfoCache = throttle(250, _feedTypeInfoCache);
 
-function getTypeInfoFromCache(uri: string): Teal.TLTypesCommandResult | null {
+export function getTypeInfoFromCache(uri: string): Teal.TLTypesCommandResult | null {
 	const cachedResult = typesCommandCache.get(uri);
 
 	if (cachedResult === undefined) {
@@ -266,6 +267,9 @@ connection.onDidOpenTextDocument(async (params) => {
 	await treeSitterDocument.init(params.textDocument.uri, params.textDocument.text);
 
 	documents.set(params.textDocument.uri, treeSitterDocument);
+
+	validateTextDocument(params.textDocument.uri);
+	feedTypeInfoCache(params.textDocument.uri);
 });
 
 connection.onDidChangeTextDocument((params) => {
@@ -280,8 +284,6 @@ connection.onDidChangeTextDocument((params) => {
 	document.edit(params.contentChanges);
 
 	validateTextDocument(uri);
-
-	// Put new `tl types` data in cache
 	feedTypeInfoCache(uri);
 });
 
@@ -363,296 +365,23 @@ async function _validateTextDocument(uri: string): Promise<void> {
 
 const validateTextDocument = debounce(500, _validateTextDocument);
 
-/**
- * Given an index node, get the type info in json format of the before-last node
- */
-function walkMultiSym2(node: SyntaxNode, typeInfo: Teal.TLTypesCommandResult, symbols: Map<string, Teal.Symbol>): any | null {
-	let indexNode = findNodeAbove(node, "index");
-
-	if (indexNode === null) {
-		indexNode = findNodeAbove(node, "method_index");
-
-		if (indexNode === null) {
-			indexNode = findNodeAbove(node, "type_index");
-
-			if (indexNode === null) {
-				return null;
-			}
-		}
-	}
-
-	let ptr: SyntaxNode | null;
-
-	if (indexNode.childCount === 0) {
-		ptr = indexNode;
-	} else {
-		ptr = indexNode.firstChild!;
-
-		while (ptr.firstChild !== null) {
-			ptr = ptr.firstChild;
-		}
-	}
-
-	if (ptr === null) {
-		return null;
-	}
-
-	const rootName = ptr.text;
-
-	if (rootName === undefined) {
-		return null;
-	}
-
-	const rootTypeSymbol = symbols.get(rootName);
-
-	if (rootTypeSymbol === undefined) {
-		return null;
-	}
-
-	let rootType: any | undefined = typeInfo.json?.["types"]?.[rootTypeSymbol.typeId];
-
-	if (rootType === undefined) {
-		return null;
-	}
-
-	while (rootType.ref !== undefined) {
-		rootType = typeInfo.json?.["types"]?.[rootType.ref];
-	}
-
-	if (rootType.childCount === 0) {
-		return rootType;
-	}
-
-	const symbolParts = getSymbolParts(indexNode);
-
-	let typeRef = rootType;
-
-	for (let x = 1; x < symbolParts.length - 1; ++x) {
-		const childStr = symbolParts[x];
-
-		// what is the type of the next symbol?
-		// it depends on the type of the current one
-
-		let childTypeId: any | undefined;
-
-		// is it a record? if so, check in fields
-		if (typeRef["t"] === 0x00020008) {
-			childTypeId = typeRef.fields?.[childStr];
-		}
-
-		// a "nominal"?
-		else if (typeRef["t"] === 0x10000000) {
-			while (typeRef.ref !== undefined) {
-				typeRef = typeInfo.json?.["types"]?.[typeRef.ref];
-			}
-
-			childTypeId = typeRef.fields?.[childStr];
-		}
-
-		// an array?
-		else if (typeRef["t"] === 0x00010008) {
-			childTypeId = typeRef.elements;
-		}
-
-		// a map?
-		else if (typeRef["t"] === 0x00040008) {
-			childTypeId = typeRef.values;
-		}
-
-		// an arrayrecords?
-		else if (typeRef["t"] === 0x00030008) {
-			childTypeId = typeRef.fields?.[childStr];
-
-			if (childTypeId === undefined) {
-				childTypeId = typeRef.elements;
-			}
-		}
-
-		// tuples not yet supported :(
-		else if (typeRef["t"] === 0x00080008) {
-
-		}
-
-		// a function?
-		else if (typeRef["t"] === 0x00000020) {
-			childTypeId = typeRef.rets[0][0];
-		}
-
-		if (childTypeId === undefined) {
-			return null;
-		}
-
-		let childType = typeInfo.json?.["types"]?.[childTypeId];
-
-		while (childType.ref !== undefined) {
-			childType = typeInfo.json?.["types"]?.[childType.ref];
-		}
-
-		typeRef = childType;
-	}
-
-	return typeRef;
-}
-
-function getTypeById(typeInfo: Teal.TLTypesCommandResult, typeId: number): any | null {
-	let typeDefinition: any | undefined = typeInfo.json?.["types"]?.[typeId];
-
-	if (typeDefinition === undefined) {
-		return null;
-	}
-
-	return typeDefinition;
-}
-
-async function autoComplete(textDocumentPositionParams: TextDocumentPositionParams): Promise<CompletionItem[]> {
-	let document = documents.get(textDocumentPositionParams.textDocument.uri);
+connection.onCompletion((params) => {
+	const document = documents.get(params.textDocument.uri);
 
 	if (document === undefined) {
-		return [];
+		return null;
 	}
 
-	const position = textDocumentPositionParams.position;
-
-	let nodeAtPosition: SyntaxNode | null = document.getNodeAtPosition(position);
-
-	if (nodeAtPosition === null) {
-		return [];
-	}
-
-	if (nodeAtPosition.type === "ERROR") {
-		// try the previous node instead?
-		if (nodeAtPosition.previousNamedSibling !== null) {
-			nodeAtPosition = nodeAtPosition.previousNamedSibling;
-		}
-	}
-
-	const isType = findNodeAbove(nodeAtPosition, "type_annotation") !== null
-		|| findNodeAbove(nodeAtPosition, "type") !== null
-		|| findNodeAbove(nodeAtPosition, "table_type") !== null
-		|| findNodeAbove(nodeAtPosition, "type_cast") !== null
-		|| findNodeAbove(nodeAtPosition, "return_type") !== null
-		|| findNodeAbove(nodeAtPosition, "simple_type") !== null;
+	const position = params.position;
 
 	const typeInfo = getTypeInfoFromCache(document.uri);
 
-	if (typeInfo === null) {
-		return [];
-	}
+    if (typeInfo === null) {
+        return null;
+    }
 
-	let symbols = Teal.symbolsInScope(typeInfo.json, position.line + 1, position.character + 1);
-
-	let indexType = walkMultiSym2(nodeAtPosition, typeInfo, symbols);
-
-	let result: CompletionItem[] = [];
-
-	function makeBasicItem(str: string, kind: CompletionItemKind): CompletionItem {
-		return {
-			label: str,
-			kind: kind
-		};
-	}
-
-	function feedTypeItem(label: string, typeId: number) {
-		let typeDefinition = getTypeById(typeInfo!, typeId);
-
-		if (typeDefinition === null || typeDefinition["str"] === undefined) {
-			return;
-		}
-
-		let kind: number = CompletionItemKind.Variable;
-
-		if (typeDefinition["ref"] !== undefined) {
-			kind = CompletionItemKind.Variable;
-		} else if (typeDefinition["str"].startsWith("function(") || typeDefinition["str"].startsWith("function<")) {
-			kind = CompletionItemKind.Function;
-		} else if (typeDefinition["enums"] !== undefined) {
-			kind = CompletionItemKind.Enum;
-		} else if (typeDefinition["str"].startsWith("type record")) {
-			kind = CompletionItemKind.Class;
-		}
-
-		const detail = prettifyTypeStr(typeDefinition.str);
-
-		result.push({
-			label: label,
-			kind: kind as CompletionItemKind,
-			data: typeDefinition,
-			detail: detail,
-			commitCharacters: ["("]
-		});
-	}
-
-	if (indexType !== null && indexType.fields !== undefined) {
-		for (const [identifier, typeId] of Object.entries(indexType.fields)) {
-			feedTypeItem(identifier, typeId as number);
-		}
-
-		return result;
-	}
-
-	// Built-in types and keywords
-	result = [
-		"nil",
-		"break",
-		"goto",
-		"do",
-		"end",
-		"while",
-		"repeat",
-		"until",
-		"if",
-		"then",
-		"elseif",
-		"else",
-		"for",
-		"in",
-		"function",
-		"local",
-		"global",
-		"record",
-		"enum",
-		"type",
-		"userdata"
-	].map(x => makeBasicItem(x, CompletionItemKind.Keyword));
-
-	result = result.concat([
-		"any",
-		"number",
-		"string",
-		"boolean",
-		"thread",
-		"nil",
-	].map(x => makeBasicItem(x, CompletionItemKind.Interface)));
-
-	for (const [symbolIdentifier, symbol] of symbols) {
-		feedTypeItem(symbol.identifier, symbol.typeId);
-	}
-
-	if (isType === true) {
-		result = result.filter(x =>
-			x.kind !== CompletionItemKind.Variable
-			&& x.kind !== CompletionItemKind.Function
-			&& x.kind !== CompletionItemKind.Keyword
-		);
-	} else {
-		result = result.filter(x =>
-			x.kind !== CompletionItemKind.Interface
-		);
-	}
-
-	return result;
-}
-
-connection.onCompletion(autoComplete);
-
-function prettifyTypeStr(type: string): string {
-	let result = type.replace(/<any type>/gm, "any");
-	result = result.replace(/@a/gm, "T");
-	result = result.replace(/@b/gm, "U");
-	result = result.replace(/\band\b/gm, "&")
-
-	return result
-}
+	return autoComplete(document, position, typeInfo);
+});
 
 function getFunctionSignature(uri: string, functionName: string, typeJson: any): SignatureInformation | null {
 	const typeInfo = getTypeInfoFromCache(uri);
@@ -671,7 +400,7 @@ function getFunctionSignature(uri: string, functionName: string, typeJson: any):
 		let argumentType = typeInfo.json["types"][argument[0]];
 
 		parameters.push({
-			label: prettifyTypeStr(argumentType.str)
+			label: Teal.prettifyTypeStr(argumentType.str)
 		});
 	}
 
@@ -680,7 +409,7 @@ function getFunctionSignature(uri: string, functionName: string, typeJson: any):
 	for (let returnType of typeJson.rets) {
 		let retType = typeInfo.json["types"][returnType[0]];
 
-		returnTypes.push(prettifyTypeStr(retType.str));
+		returnTypes.push(Teal.prettifyTypeStr(retType.str));
 	}
 
 	let label = `${functionName}(${parameters.map(x => x.label).join(", ")})`;
@@ -720,7 +449,9 @@ function getSymbolParts(parentNode: SyntaxNode): Array<string> {
 }
 
 async function signatureHelp(textDocumentPosition: TextDocumentPositionParams, token: CancellationToken): Promise<SignatureHelp | null> {
-	const document: TreeSitterDocument | undefined = documents.get(textDocumentPosition.textDocument.uri);
+	return null;
+	
+	/* const document: TreeSitterDocument | undefined = documents.get(textDocumentPosition.textDocument.uri);
 
 	if (document === undefined) {
 		return null;
@@ -734,7 +465,7 @@ async function signatureHelp(textDocumentPosition: TextDocumentPositionParams, t
 		return null;
 	}
 
-	const parentNode = findNodeAbove(nodeAtPosition, "function_call");
+	const parentNode = findNodeOrFieldAbove(nodeAtPosition, "function_call");
 
 	if (parentNode === null) {
 		return null;
@@ -742,7 +473,7 @@ async function signatureHelp(textDocumentPosition: TextDocumentPositionParams, t
 
 	const calledObject = parentNode.childForFieldName("called_object")!;
 
-	const functionArgs = findNodeAbove(nodeAtPosition, "arguments");
+	const functionArgs = findNodeOrFieldAbove(nodeAtPosition, "arguments");
 
 	if (functionArgs === null) {
 		return null;
@@ -790,7 +521,7 @@ async function signatureHelp(textDocumentPosition: TextDocumentPositionParams, t
 		],
 		activeParameter: Math.max(0, functionArgs.namedChildCount - 1),
 		activeSignature: 0,
-	};
+	}; */
 };
 
 connection.onSignatureHelp(signatureHelp);
@@ -877,7 +608,7 @@ async function getTypeInfoAtPosition(uri: string, position: Position): Promise<T
 
 	return {
 		location: destinationLocation,
-		name: prettifyTypeStr(typeName)
+		name: Teal.prettifyTypeStr(typeName)
 	}
 }
 

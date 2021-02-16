@@ -29,7 +29,7 @@ export namespace Teal {
         location: Location | null,
         name: string
     };
-    
+
     type FileName = string;
     type TypeId = number;
 
@@ -159,9 +159,6 @@ export namespace Teal {
         }
     }
 
-    /**
-     * 
-     */
     export async function runCommand(command: TLCommand, filePath?: string): Promise<TLCommandIOInfo> {
         let child: any;
 
@@ -234,5 +231,14 @@ export namespace Teal {
             minor: Number.parseInt(groups.minor),
             patch: Number.parseInt(groups.patch)
         };
+    }
+
+    export function prettifyTypeStr(type: string): string {
+        let result = type.replace(/<any type>/gm, "any");
+        result = result.replace(/@a/gm, "T");
+        result = result.replace(/@b/gm, "U");
+        result = result.replace(/\band\b/gm, "&")
+    
+        return result
     }
 };

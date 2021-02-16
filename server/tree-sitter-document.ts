@@ -145,6 +145,15 @@ export function positionInNode(pos: Position, node: Parser.SyntaxNode): boolean 
         );
 }
 
+export function positionAfterNode(pos: Position, node: Parser.SyntaxNode): boolean {
+    return pos.line >= node.endPosition.row
+        && (
+            pos.line > node.endPosition.row
+            || pos.character > node.endPosition.column
+        );
+}
+
+
 export function nodeLength(node: Parser.SyntaxNode): number {
     return node.endIndex - node.startIndex;
 }
@@ -185,22 +194,22 @@ export function smallestDescendantForPosition(rootNode: Parser.SyntaxNode, posit
     return min
 }
 
-export function findNodeAbove(baseNode: Parser.SyntaxNode, type: string): Parser.SyntaxNode | null {
-	let ptr: Parser.SyntaxNode | null = baseNode;
+export function findNodeOrFieldAbove(baseNode: Parser.SyntaxNode, type: string): Parser.SyntaxNode | null {
+    let ptr: Parser.SyntaxNode | null = baseNode;
 
-	while (ptr !== null) {
-		if (ptr.type === type) {
-			return ptr;
-		}
+    while (ptr !== null) {
+        if (ptr.type === type) {
+            return ptr;
+        }
 
-		const fieldNode = ptr.childForFieldName(type);
+        const fieldNode = ptr.childForFieldName(type);
 
-		if (fieldNode != null) {
-			return fieldNode;
-		}
+        if (fieldNode != null) {
+            return fieldNode;
+        }
 
-		ptr = ptr.parent;
-	}
+        ptr = ptr.parent;
+    }
 
-	return null;
+    return null;
 }
