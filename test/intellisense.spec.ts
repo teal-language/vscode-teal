@@ -4,7 +4,7 @@ import 'mocha';
 import { SyntaxNode } from "web-tree-sitter";
 import { findFunctionCallRootAtPosition, findIndexRootAtPosition, findNodeAbove, findNodeBeforeOrBelow, getSymbolParts } from "../server/intellisense";
 import { TreeSitterDocument } from "../server/tree-sitter-document";
-import { beautify } from "./sexpr";
+// import { beautify } from "./sexpr";
 
 async function getTestDocument(text: string) {
     const result = new TreeSitterDocument();
@@ -13,7 +13,7 @@ async function getTestDocument(text: string) {
     return result;
 }
 
-function debugNode(doc: TreeSitterDocument, node: SyntaxNode) {
+/* function debugNode(doc: TreeSitterDocument, node: SyntaxNode) {
     console.log("Tree dump:", beautify(doc.dumpTree()));
     console.log("Node at position:", beautify(node.toString()), "[", node.text, "]");
     console.log("Its parent:", beautify(node.parent?.toString()), "[", node.parent?.text, "]");
@@ -22,7 +22,7 @@ function debugNode(doc: TreeSitterDocument, node: SyntaxNode) {
     if (node.type === "ERROR") {
         console.log("Index node next or below (error node detected):", findNodeBeforeOrBelow(node, ["index", "method_index"])?.text);
     }
-}
+} */
 
 async function expressionSplitTest(code: string, y: number, x: number, expected: string[]) {
     const doc = await getTestDocument(code);
