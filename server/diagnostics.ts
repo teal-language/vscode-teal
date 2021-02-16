@@ -6,15 +6,15 @@ import { TreeSitterDocument } from "./tree-sitter-document";
 
 export namespace TealLS {
     export async function validateTextDocument(textDocument: TreeSitterDocument): Promise<Map<string, Diagnostic[]>> {
-        let checkResult = await Teal.runCommandOnText(Teal.TLCommand.Check, textDocument.getText());;
+        const checkResult = await Teal.runCommandOnText(Teal.TLCommand.Check, textDocument.getText());;
     
-        let crashPattern = /stack traceback:/m;
+        const crashPattern = /stack traceback:/m;
     
         if (crashPattern.test(checkResult.stderr)) {
             throw checkResult.stderr;
         }
     
-        let errorPattern = /(?<fileName>^.*?):(?<lineNumber>\d+):((?<columnNumber>\d+):)? (?<errorMessage>.+)$/gm;
+        const errorPattern = /(?<fileName>^.*?):(?<lineNumber>\d+):((?<columnNumber>\d+):)? (?<errorMessage>.+)$/gm;
     
         let diagnosticsByPath = new Map<string, Diagnostic[]>();
         

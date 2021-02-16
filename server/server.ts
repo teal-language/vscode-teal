@@ -352,7 +352,7 @@ async function _validateTextDocument(uri: string): Promise<void> {
 	try {
 		const diagnosticsByPath = await TealLS.validateTextDocument(textDocument);
 	
-		for (let [uri, diagnostics] of Object.entries(diagnosticsByPath)) {
+		for (let [uri, diagnostics] of diagnosticsByPath.entries()) {
 			connection.sendDiagnostics({ uri: uri, diagnostics: diagnostics });
 		}
 	} catch(error) {
