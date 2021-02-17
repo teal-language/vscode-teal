@@ -1,8 +1,3 @@
-/* --------------------------------------------------------------------------------------------
- * Based on lsp-sample.
- * See LICENSE-vscode-extension-samples at the root of the project for licensing info.
- * ------------------------------------------------------------------------------------------ */
-
 import {
 	createConnection,
 	ProposedFeatures,
@@ -29,8 +24,7 @@ import {
 import { URI } from 'vscode-uri';
 import * as path from "path";
 import { Teal } from './teal';
-import { findNodeOrFieldAbove, pointToPosition, positionInNode, positionToPoint, TreeSitterDocument } from './tree-sitter-document'
-import { SyntaxNode } from 'web-tree-sitter';
+import { TreeSitterDocument } from './tree-sitter-document'
 import { fileExists } from './file-utils';
 import { TealLS } from './diagnostics';
 import { isEmptyOrSpaces } from './text-utils';
@@ -422,30 +416,6 @@ function getFunctionSignature(uri: string, functionName: string, typeJson: any):
 		label: label,
 		parameters: parameters
 	}
-}
-
-function getSymbolParts(parentNode: SyntaxNode): Array<string> {
-	if (parentNode.childCount === 0) {
-		return [parentNode.text];
-	}
-
-	const result = new Array<string>();
-
-	let ptr: SyntaxNode | null = parentNode;
-
-	while (ptr.firstChild !== null) {
-		if (ptr.type === "index" || ptr.type === "method_index") {
-			let field = ptr.childForFieldName("key")!;
-
-			result.push(field.text);
-		}
-
-		ptr = ptr.firstChild;
-	}
-
-	result.push(ptr.text);
-
-	return result.reverse();
 }
 
 async function signatureHelp(textDocumentPosition: TextDocumentPositionParams, token: CancellationToken): Promise<SignatureHelp | null> {

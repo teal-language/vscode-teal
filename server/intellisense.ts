@@ -1,4 +1,4 @@
-import { CompletionItem, TextDocumentPositionParams, Position, CompletionItemKind } from "vscode-languageserver/node";
+import { CompletionItem, Position, CompletionItemKind } from "vscode-languageserver/node";
 import { SyntaxNode } from "web-tree-sitter";
 import { Teal } from "./teal";
 import { findNodeOrFieldAbove, positionAfterNode, TreeSitterDocument } from "./tree-sitter-document";
