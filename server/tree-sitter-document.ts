@@ -42,6 +42,7 @@ export class TreeSitterDocument {
 
     edit(edits: TextDocumentContentChangeEvent[]) {
         if (this._tree === null || this._parser === null || this._document === null) {
+            console.log("[Warning]", "Some edits have been lost!");
             return;
         }
 
@@ -49,26 +50,44 @@ export class TreeSitterDocument {
             return;
         }
 
-        this._document = TextDocument.update(this._document!, edits, this._document!.version + 1)
-
         for (const edit of edits) {
             if ("range" in edit) {
                 const startIndex = this._document.offsetAt(edit.range.start);
                 const oldEndIndex = this._document.offsetAt(edit.range.end);
                 const newEndIndex = startIndex + edit.text.length;
 
+                const startPosition = positionToPoint(edit.range.start);
+                const oldEndPosition = positionToPoint(edit.range.end);
+
+                const extent = getExtent(edit.text);
+
+                let newEndPosition = oldEndPosition;
+
+                newEndPosition.row = startPosition.row + extent.row;
+
+                if (extent.row > 0) {
+                    newEndPosition.column = extent.column;
+                } else {
+                    newEndPosition.column = startPosition.column + extent.column;
+                }
+
                 const delta: Parser.Edit = {
                     startIndex: startIndex,
                     oldEndIndex: oldEndIndex,
                     newEndIndex: newEndIndex,
-                    startPosition: positionToPoint(this._document.positionAt(startIndex)),
-                    oldEndPosition: positionToPoint(this._document.positionAt(oldEndIndex)),
-                    newEndPosition: positionToPoint(this._document.positionAt(newEndIndex)),
+                    startPosition: startPosition,
+                    oldEndPosition: oldEndPosition,
+                    newEndPosition: newEndPosition
                 };
 
                 this._tree.edit(delta);
+            } else {
+                console.log("[INFO] Rebuilding whole syntax tree");
+                this._tree = this._parser.parse(edit.text);
             }
         }
+
+        this._document = TextDocument.update(this._document!, edits, this._document!.version + 1)
 
         this._tree = this._parser.parse(this._document.getText(), this._tree);
     }
@@ -121,6 +140,13 @@ export class TreeSitterDocument {
         return this._tree.rootNode.toString()
     }
 };
+
+function getExtent(text: string): Parser.Point {
+    let lines = text.split("\n");
+
+    return { row: lines.length - 1, column: lines[lines.length - 1].length };
+}
+
 
 export function positionToPoint(pos: Position): Parser.Point {
     return {
