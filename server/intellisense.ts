@@ -94,13 +94,17 @@ export function findIndexRootAtPosition(document: TreeSitterDocument, line: numb
     let indexRoot: SyntaxNode | null;
 
     if (nodeAtPosition.type === "ERROR") {
-        indexRoot = findNodeBeforeOrBelow(nodeAtPosition, ["index", "method_index", "identifier", "table_entry"]);
+        indexRoot = findNodeBeforeOrBelow(nodeAtPosition, ["index", "method_index", "identifier", "table_entry", "type_annotation", "arg", "simple_type", "type_index"]);
 
         if (indexRoot !== null && indexRoot.type === "table_entry") {
             indexRoot = indexRoot.childForFieldName("value");
+        } else if (indexRoot !== null && indexRoot.type === "type_annotation") {
+            indexRoot = findNodeBeforeOrBelow(indexRoot, ["simple_type", "type_index"]);
+        } else if (indexRoot !== null && indexRoot.type === "arg") {
+            indexRoot = findNodeBeforeOrBelow(indexRoot, ["simple_type", "type_index"]);
         }
     } else {
-        indexRoot = findNodeAbove(nodeAtPosition, ["index", "method_index"]);
+        indexRoot = findNodeAbove(nodeAtPosition, ["index", "method_index", "type_index"]);
     }
 
     return indexRoot;
@@ -121,12 +125,12 @@ export function findFunctionCallRootAtPosition(document: TreeSitterDocument, lin
 /**
  * Find every identifier before the cursor in a complex expression.
  * For instance, in the expression `abc.efg().hij|` where | is the cursor, the result would be an array containing [abc, efg].
- * We can then use this array to determine the type of every part in a complex expression, for autocompletion purposes or for displaying signature hints.
+ * We can then use this array to determine the type of every part of a complex expression, for autocompletion purposes or for displaying signature hints.
  */
 export function getSymbolParts(node: SyntaxNode, row: number, column: number): string[] {
     const result: string[] = [];
 
-    descendantsOfTypes(node, ["identifier"], ["arguments"])
+    descendantsOfTypes(node, ["identifier", "simple_type"], ["arguments"])
         .forEach(x => {
             if (positionAfterNode({ line: row, character: column }, x)) {
                 result.push(x.text);
@@ -311,9 +315,7 @@ export async function autoComplete(document: TreeSitterDocument, position: Posit
     if (indexRoot !== null) {
         const results = autoCompleteIndex(indexRoot, typeInfo, symbols, position);
 
-        if (results.length > 0) {
-            return results;
-        }
+        return results;
     }
 
     let nodeAtPosition: SyntaxNode | null = document.getNodeAtPosition(position);

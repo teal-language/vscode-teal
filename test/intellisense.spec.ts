@@ -13,20 +13,6 @@ async function getTestDocument(text: string) {
     return result;
 }
 
-function arraysEqual(arr1: string[], arr2: string[]): boolean {
-    if (arr1.length !== arr2.length) {
-        return false;
-    }
-
-    for (let i = 0; i < arr1.length; ++i) {
-        if (arr1[i] !== arr2[i]) {
-            return false;
-        }
-    }
-
-    return true;
-}
-
 /* function debugNode(doc: TreeSitterDocument, node: SyntaxNode) {
     console.log("Tree dump:", beautify(doc.dumpTree()));
     console.log("Node at position:", beautify(node.toString()), "[", node.text, "]");
@@ -142,6 +128,34 @@ make_point {
     it('works when sandwiched between two ":"', async () => {
         const code = `abc::hij`;
         await expressionSplitTest(code, 0, 4, ["abc"]);
+    });
+    it('works with a partial nested type next to a variable declaration', async () => {
+        const code = `local pt: Point. = { x = 2, y = 3 }`;
+        await expressionSplitTest(code, 0, 16, ["Point"]);
+    });
+    it('works with a complete nested type next to a variable declaration', async () => {
+        const code = `local pt: Point.E = { x = 2, y = 3 }`;
+        await expressionSplitTest(code, 0, 17, ["Point"]);
+    });
+    it("works with partial input inside a type annotation, inside a function declaration", async () => {
+        const code = `local function make_point(x: Point., y: number) end`;
+        await expressionSplitTest(code, 0, 35, ["Point"]);
+    });
+    it("works with complete input inside a type annotation, inside a function declaration", async () => {
+        const code = `local function make_point(x: Point.E, y: number) end`;
+        await expressionSplitTest(code, 0, 36, ["Point"]);
+    });
+    it("works with partial input inside a type annotation, inside a function declaration, with two nested types", async () => {
+        const code = `local function make_point(x: Point.A., y: number) end`;
+        await expressionSplitTest(code, 0, 37, ["Point", "A"]);
+    });
+    it("works with partial input inside a type annotation, inside a map", async () => {
+        const code = `local pt = { x: Point. = 1 }`;
+        await expressionSplitTest(code, 0, 22, ["Point"]);
+    });
+    it("works with partial input inside a type annotation, inside a map, with two nested types", async () => {
+        const code = `local pt = { x: Point.A. = 1 }`;
+        await expressionSplitTest(code, 0, 24, ["Point", "A"]);
     });
     xit('works when sandwiched between two ".", inside an if', async () => {
         const code = `if abc..hij then end`;
