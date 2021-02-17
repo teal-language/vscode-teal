@@ -2,6 +2,7 @@ import { withFile } from 'tmp-promise'
 import { spawn } from 'child_process';
 import { writeFile } from './file-utils';
 import { Location } from 'vscode-languageserver/node';
+import { MajorMinorPatch } from './major-minor-patch';
 
 export namespace Teal {
     class TLNotFoundError extends Error { /* ... */ }
@@ -209,12 +210,6 @@ export namespace Teal {
         });
     }
 
-    interface MajorMinorPatch {
-        major: number,
-        minor: number,
-        patch: number
-    }
-
     export async function getVersion(): Promise<MajorMinorPatch | null> {
         const commandResult = await Teal.runCommand(Teal.TLCommand.Version);
 
@@ -226,11 +221,11 @@ export namespace Teal {
 
         const groups = majorMinorPatch.groups!;
 
-        return {
-            major: Number.parseInt(groups.major),
-            minor: Number.parseInt(groups.minor),
-            patch: Number.parseInt(groups.patch)
-        };
+        return new MajorMinorPatch(
+            Number.parseInt(groups.major),
+            Number.parseInt(groups.minor),
+            Number.parseInt(groups.patch)
+        );
     }
 
     export function prettifyTypeStr(type: string): string {

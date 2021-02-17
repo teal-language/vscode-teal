@@ -29,6 +29,7 @@ import { fileExists } from './file-utils';
 import { TealLS } from './diagnostics';
 import { isEmptyOrSpaces } from './text-utils';
 import { autoComplete } from './intellisense';
+import { MajorMinorPatch } from './major-minor-patch';
 
 const documents: Map<string, TreeSitterDocument> = new Map();
 
@@ -41,7 +42,7 @@ connection.onInitialize((params: InitializeParams) => {
 	let capabilities = params.capabilities;
 
 	hasConfigurationCapability = (
-		capabilities.workspace !== undefined 
+		capabilities.workspace !== undefined
 		&& capabilities.workspace.configuration === true
 	);
 
@@ -98,10 +99,12 @@ async function verifyMinimumTLVersion() {
 	const tlVersion = await Teal.getVersion();
 
 	if (tlVersion !== null) {
+		const targetVersion = new MajorMinorPatch(0, 11, 2);
+
 		console.log(`tl version: ${tlVersion.major}.${tlVersion.minor}.${tlVersion.patch}`);
 
-		if (tlVersion.major === 0 && tlVersion.minor < 11) {
-			showErrorMessage("[Warning]\n" + "You are using an outdated version of the tl compiler. Please upgrade tl to v0.11.0 or later.");
+		if (tlVersion.compareTo(targetVersion) === -1) {
+			showErrorMessage(`[Warning]\nYou are using an outdated version of the tl compiler. Please upgrade tl to v${targetVersion.toString()} or later.`);
 			return null;
 		}
 	} else {
@@ -212,7 +215,7 @@ async function _feedTypeInfoCache(uri: string) {
 
 	try {
 		typesCmdResult = await Teal.runCommandOnText(Teal.TLCommand.Types, documentText);
-	} catch(error) {
+	} catch (error) {
 		showErrorMessage("[Error]\n" + error.message);
 		return null;
 	};
@@ -345,11 +348,11 @@ async function _validateTextDocument(uri: string): Promise<void> {
 
 	try {
 		const diagnosticsByPath = await TealLS.validateTextDocument(textDocument);
-	
+
 		for (let [uri, diagnostics] of diagnosticsByPath.entries()) {
 			connection.sendDiagnostics({ uri: uri, diagnostics: diagnostics });
 		}
-	} catch(error) {
+	} catch (error) {
 		showErrorMessage("[Error]\n" + error.message);
 		connection.sendDiagnostics({ uri: uri, diagnostics: [] });
 		return;
@@ -370,9 +373,9 @@ connection.onCompletion((params) => {
 
 	const typeInfo = getTypeInfoFromCache(document.uri);
 
-    if (typeInfo === null) {
-        return null;
-    }
+	if (typeInfo === null) {
+		return null;
+	}
 
 	return autoComplete(document, position, typeInfo);
 });
@@ -420,7 +423,7 @@ function getFunctionSignature(uri: string, functionName: string, typeJson: any):
 
 async function signatureHelp(textDocumentPosition: TextDocumentPositionParams, token: CancellationToken): Promise<SignatureHelp | null> {
 	return null;
-	
+
 	/* const document: TreeSitterDocument | undefined = documents.get(textDocumentPosition.textDocument.uri);
 
 	if (document === undefined) {
