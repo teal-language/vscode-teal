@@ -5,3 +5,4 @@ vsc-extension-quickstart.md
 scripts/**
 test/**
 out/test/**
+.github/**
