@@ -178,7 +178,6 @@ export function positionAfterNode(pos: Position, node: Parser.SyntaxNode): boole
         );
 }
 
-
 export function nodeLength(node: Parser.SyntaxNode): number {
     return node.endIndex - node.startIndex;
 }
@@ -217,24 +216,4 @@ export function smallestDescendantForPosition(rootNode: Parser.SyntaxNode, posit
     }
 
     return min
-}
-
-export function findNodeOrFieldAbove(baseNode: Parser.SyntaxNode, type: string): Parser.SyntaxNode | null {
-    let ptr: Parser.SyntaxNode | null = baseNode;
-
-    while (ptr !== null) {
-        if (ptr.type === type) {
-            return ptr;
-        }
-
-        const fieldNode = ptr.childForFieldName(type);
-
-        if (fieldNode != null) {
-            return fieldNode;
-        }
-
-        ptr = ptr.parent;
-    }
-
-    return null;
 }

@@ -1,7 +1,7 @@
 import { CompletionItem, Position, CompletionItemKind } from "vscode-languageserver/node";
 import { SyntaxNode } from "web-tree-sitter";
 import { Teal } from "./teal";
-import { findNodeOrFieldAbove, positionAfterNode, TreeSitterDocument } from "./tree-sitter-document";
+import { positionAfterNode, TreeSitterDocument } from "./tree-sitter-document";
 
 export function findNodeAbove(baseNode: SyntaxNode, type: string[]): SyntaxNode | null {
     let ptr: SyntaxNode | null = baseNode;
@@ -45,6 +45,20 @@ export function findNodeBeforeOrBelow(rootNode: SyntaxNode, type: string[], igno
     return null;
 }
 
+export function findNodeAfter(rootNode: SyntaxNode, type: string[]): SyntaxNode | null {
+    let sibling = rootNode.nextNamedSibling;
+
+    while (sibling !== null) {
+        if (type.includes(sibling.type)) {
+            return sibling;
+        }
+
+        sibling = sibling.nextNamedSibling;
+    }
+
+    return null;
+}
+
 /**
  * Note: the root can include itself in the descendants list (FIXME?)
  */
@@ -79,8 +93,12 @@ export function findIndexRootAtPosition(document: TreeSitterDocument, line: numb
 
     let indexRoot: SyntaxNode | null;
 
-    if (nodeAtPosition.type === "ERROR" && (nodeAtPosition.text.trim().endsWith(".") || nodeAtPosition.text.trim().endsWith(":"))) {
+    if (nodeAtPosition.type === "ERROR") {
         indexRoot = findNodeBeforeOrBelow(nodeAtPosition, ["index", "method_index", "identifier", "table_entry"]);
+
+        if (indexRoot !== null && indexRoot.type === "table_entry") {
+            indexRoot = indexRoot.childForFieldName("value");
+        }
     } else {
         indexRoot = findNodeAbove(nodeAtPosition, ["index", "method_index"]);
     }
@@ -105,12 +123,12 @@ export function findFunctionCallRootAtPosition(document: TreeSitterDocument, lin
  * For instance, in the expression `abc.efg().hij|` where | is the cursor, the result would be an array containing [abc, efg].
  * We can then use this array to determine the type of every part in a complex expression, for autocompletion purposes or for displaying signature hints.
  */
-export function getSymbolParts(node: SyntaxNode, line: number, column: number): string[] {
+export function getSymbolParts(node: SyntaxNode, row: number, column: number): string[] {
     const result: string[] = [];
 
     descendantsOfTypes(node, ["identifier"], ["arguments"])
         .forEach(x => {
-            if (positionAfterNode({ line: line, character: column }, x)) {
+            if (positionAfterNode({ line: row, character: column }, x)) {
                 result.push(x.text);
             }
         });
@@ -195,7 +213,7 @@ function getTargetType(type: any, key: string, typeInfo: Teal.TLTypesCommandResu
     return targetType;
 }
 
-function autoCompleteIndex(indexRoot: SyntaxNode, typeInfo: Teal.TLTypesCommandResult, position: Position): CompletionItem[] {
+function autoCompleteIndex(indexRoot: SyntaxNode, typeInfo: Teal.TLTypesCommandResult, symbolsInScope: Map<string, Teal.Symbol>, position: Position): CompletionItem[] {
     let result: CompletionItem[] = [];
 
     const symbolParts = getSymbolParts(indexRoot, position.line, position.character);
@@ -203,8 +221,6 @@ function autoCompleteIndex(indexRoot: SyntaxNode, typeInfo: Teal.TLTypesCommandR
     if (symbolParts.length === 0) {
         return [];
     }
-
-    let symbolsInScope = Teal.symbolsInScope(typeInfo.json, position.line + 1, position.character + 1);
 
     let rootSymbol = symbolsInScope.get(symbolParts[0]);
 
@@ -247,7 +263,7 @@ function autoCompleteIndex(indexRoot: SyntaxNode, typeInfo: Teal.TLTypesCommandR
     if (typeRef.fields !== undefined) {
         for (const [identifier, typeId] of Object.entries(typeRef.fields)) {
             const completionItem = makeTypeItem(typeInfo, typeId as number, identifier);
-    
+
             if (completionItem !== null) {
                 result.push(completionItem);
             }
@@ -293,7 +309,7 @@ export async function autoComplete(document: TreeSitterDocument, position: Posit
     const indexRoot = findIndexRootAtPosition(document, position.line, position.character);
 
     if (indexRoot !== null) {
-        const results = autoCompleteIndex(indexRoot, typeInfo, position);
+        const results = autoCompleteIndex(indexRoot, typeInfo, symbols, position);
 
         if (results.length > 0) {
             return results;
@@ -313,12 +329,7 @@ export async function autoComplete(document: TreeSitterDocument, position: Posit
         }
     } */
 
-    const isType = findNodeOrFieldAbove(nodeAtPosition, "type_annotation") !== null
-        || findNodeOrFieldAbove(nodeAtPosition, "type") !== null
-        || findNodeOrFieldAbove(nodeAtPosition, "table_type") !== null
-        || findNodeOrFieldAbove(nodeAtPosition, "type_cast") !== null
-        || findNodeOrFieldAbove(nodeAtPosition, "return_type") !== null
-        || findNodeOrFieldAbove(nodeAtPosition, "simple_type") !== null;
+    const isType = findNodeAbove(nodeAtPosition, ["type_annotation", "type", "table_type", "type_cast", "return_type", "simple_type"]) !== null;
 
     let result: CompletionItem[] = [];
 

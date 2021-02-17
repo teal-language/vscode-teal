@@ -13,6 +13,20 @@ async function getTestDocument(text: string) {
     return result;
 }
 
+function arraysEqual(arr1: string[], arr2: string[]): boolean {
+    if (arr1.length !== arr2.length) {
+        return false;
+    }
+
+    for (let i = 0; i < arr1.length; ++i) {
+        if (arr1[i] !== arr2[i]) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 /* function debugNode(doc: TreeSitterDocument, node: SyntaxNode) {
     console.log("Tree dump:", beautify(doc.dumpTree()));
     console.log("Node at position:", beautify(node.toString()), "[", node.text, "]");
@@ -31,7 +45,9 @@ async function expressionSplitTest(code: string, y: number, x: number, expected:
 
     assert(indexRoot !== null);
 
-    assert.deepStrictEqual(getSymbolParts(indexRoot, y, x), expected);
+    const symbolParts = getSymbolParts(indexRoot, y, x);
+
+    assert.deepStrictEqual(symbolParts, expected);
 }
 
 describe("Splitting an expression into parts", () => {
@@ -83,15 +99,61 @@ describe("Splitting an expression into parts", () => {
         const code = `abc.efg(hij)(klm).nop.qrs`;
         await expressionSplitTest(code, 0, 25, ["abc", "efg", "nop"]);
     });
-    it('works inside a table literal', async () => {
+    it('works inside an array literal', async () => {
         const code = `local x = { abc. }`;
-        const doc = await getTestDocument(code);
+        await expressionSplitTest(code, 0, 16, ["abc"]);
+    });
+    it('works inside a map literal', async () => {
+        const code = `local x = { abc = def. }`;
+        await expressionSplitTest(code, 0, 22, ["def"]);
+    });
+    it("works inside a map literal, inside a function call without parentheses", async () => {
+        const code2 = `
+local record Point
+    x: number
+    y: number
+end
+    
+local function make_point(x: number, y: number): Point
+    return { x = x, y = y }
+end
+    
+local pt: Point = { x = 2, y = 3 }
+    
+make_point {
+    x = pt.
+}
+`;
+    await expressionSplitTest(code2, 13, 11, ["pt"]);
 
-        const indexRoot = findIndexRootAtPosition(doc, 0, 16);
-    
-        assert(indexRoot !== null);
-    
-        assert.deepStrictEqual(getSymbolParts(indexRoot, 0, 16), ["abc"]);
+    });
+    it('works inside a map literal, before a comma', async () => {
+        const code = `local x = { abc = def., ijk = lmn }`;
+        await expressionSplitTest(code, 0, 22, ["def"]);
+    });
+    it('works inside an expression key', async () => {
+        const code = `local x = { [abc.] = ghi }`;
+        await expressionSplitTest(code, 0, 17, ["abc"]);
+    });
+    it('works when sandwiched between two "."', async () => {
+        const code = `abc..hij`;
+        await expressionSplitTest(code, 0, 4, ["abc"]);
+    });
+    it('works when sandwiched between two ":"', async () => {
+        const code = `abc::hij`;
+        await expressionSplitTest(code, 0, 4, ["abc"]);
+    });
+    xit('works when sandwiched between two ".", inside an if', async () => {
+        const code = `if abc..hij then end`;
+        await expressionSplitTest(code, 0, 7, ["abc"]);
+    });
+    xit('works when sandwiched between two ".", inside an elseif', async () => {
+        const code = `elseif child..typename == "number" then end`;
+        await expressionSplitTest(code, 0, 13, ["child"]);
+    });
+    xit('works when sandwiched between two ".", inside a function call', async () => {
+        const code = `apply_facts(node.exp, node..known)`;
+        await expressionSplitTest(code, 0, 27, ["node"]);
     });
     it('index root on single element expression is null', async () => {
         const code = `abc()`;
@@ -131,7 +193,7 @@ describe("Splitting a function call into parts", () => {
         const calledObject = functionCallRoot.childForFieldName("called_object");
 
         assert(calledObject !== null);
-        
+
         const symbolParts = getSymbolParts(calledObject, calledObject.endPosition.row, calledObject.endPosition.column + 1);
 
         assert.deepStrictEqual(symbolParts, ["abc", "efg"]);
@@ -147,7 +209,7 @@ describe("Splitting a function call into parts", () => {
         const calledObject = functionCallRoot.childForFieldName("called_object");
 
         assert(calledObject !== null);
-        
+
         const symbolParts = getSymbolParts(calledObject, calledObject.endPosition.row, calledObject.endPosition.column + 1);
 
         assert.deepStrictEqual(symbolParts, ["abc", "efg"]);
