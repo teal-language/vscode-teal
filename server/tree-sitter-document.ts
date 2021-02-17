@@ -61,7 +61,7 @@ export class TreeSitterDocument {
 
                 const extent = getExtent(edit.text);
 
-                let newEndPosition = oldEndPosition;
+                let newEndPosition: Parser.Point = { row: 0, column: 0 };
 
                 newEndPosition.row = startPosition.row + extent.row;
 
@@ -81,15 +81,14 @@ export class TreeSitterDocument {
                 };
 
                 this._tree.edit(delta);
+                this._document = TextDocument.update(this._document!, [edit], this._document!.version + 1);
+                this._tree = this._parser.parse(this._document.getText(), this._tree);
             } else {
                 console.log("[INFO] Rebuilding whole syntax tree");
+                this._document = TextDocument.update(this._document!, [edit], this._document!.version + 1);
                 this._tree = this._parser.parse(edit.text);
             }
         }
-
-        this._document = TextDocument.update(this._document!, edits, this._document!.version + 1)
-
-        this._tree = this._parser.parse(this._document.getText(), this._tree);
     }
 
     public getText(range?: Range | undefined): string {
