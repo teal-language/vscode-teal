@@ -196,7 +196,7 @@ function getTargetType(type: any, key: string, typeInfo: Teal.TLTypesCommandResu
 
     // a function?
     else if (type["t"] === 0x00000020) {
-        targetTypeId = type.rets[0][0];
+        targetTypeId = type.rets[0]?.[0];
     }
 
     // a string? if so, find the string global table
