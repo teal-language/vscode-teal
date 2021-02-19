@@ -499,6 +499,22 @@ async function signatureHelp(textDocumentPosition: TextDocumentPositionParams, t
 
 connection.onSignatureHelp(signatureHelp);
 
+function findTokenBeforePosition(tokens: string[], document: TreeSitterDocument, position: Position) {
+	const line = document.getText(Range.create(position.line, 0, position.line + 1, 0));
+
+	let start = position.character - 1;
+
+	while (start >= 0) {
+		if (tokens.includes(line[start])) {
+			return Position.create(position.line, start);
+		}
+
+		start--;
+	}
+
+	return null;
+}
+
 async function getTypeInfoAtPosition(uri: string, position: Position): Promise<Teal.TLTypeInfo | null> {
 	const textDocument = documents.get(uri);
 
@@ -522,6 +538,14 @@ async function getTypeInfoAtPosition(uri: string, position: Position): Promise<T
 	};
 
 	let typeId: string | undefined = typesJson?.["by_pos"]?.[tmpPath]?.[position.line + 1]?.[wordRange.start.character + 1];
+
+	if (typeId === undefined) {
+		let index = findTokenBeforePosition([".", ":"], textDocument, wordRange.start);
+
+		if (index !== null) {
+			typeId = typesJson?.["by_pos"]?.[tmpPath]?.[position.line + 1]?.[index.character + 1];
+		}
+	}
 
 	if (typeId === undefined) {
 		return null;
