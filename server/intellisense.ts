@@ -93,7 +93,10 @@ export function findIndexRootAtPosition(document: TreeSitterDocument, line: numb
 
     let indexRoot: SyntaxNode | null;
 
-    if (nodeAtPosition.type === "ERROR") {
+    // detects the case where the user is typing between two '.', like abc.|.def
+    const isConfusedForOp = nodeAtPosition.type === "op" && nodeAtPosition.startPosition.column === column - 1 && nodeAtPosition.endPosition.column === column + 1;
+
+    if (nodeAtPosition.type === "ERROR" || isConfusedForOp) {
         indexRoot = findNodeBeforeOrBelow(nodeAtPosition, ["index", "method_index", "identifier", "table_entry", "type_annotation", "arg", "simple_type", "type_index"]);
 
         if (indexRoot !== null && indexRoot.type === "table_entry") {

@@ -157,15 +157,19 @@ make_point {
         const code = `local pt = { x: Point.A. = 1 }`;
         await expressionSplitTest(code, 0, 24, ["Point", "A"]);
     });
-    xit('works when sandwiched between two ".", inside an if', async () => {
+    it('works when sandwiched between two ".", inside an if', async () => {
         const code = `if abc..hij then end`;
         await expressionSplitTest(code, 0, 7, ["abc"]);
     });
-    xit('works when sandwiched between two ".", inside an elseif', async () => {
+    it('works when sandwiched between two ".", inside an if, after two indexes', async () => {
+        const code = `if abc.efg..hij then end`;
+        await expressionSplitTest(code, 0, 11, ["abc", "efg"]);
+    });
+    it('works when sandwiched between two ".", inside an elseif', async () => {
         const code = `elseif child..typename == "number" then end`;
         await expressionSplitTest(code, 0, 13, ["child"]);
     });
-    xit('works when sandwiched between two ".", inside a function call', async () => {
+    it('works when sandwiched between two ".", inside a function call', async () => {
         const code = `apply_facts(node.exp, node..known)`;
         await expressionSplitTest(code, 0, 27, ["node"]);
     });
