@@ -500,6 +500,8 @@ async function signatureHelp(textDocumentPosition: TextDocumentPositionParams, t
 connection.onSignatureHelp(signatureHelp);
 
 function findTokenBeforePosition(tokens: string[], document: TreeSitterDocument, position: Position) {
+	const spacePattern = /\s/;
+
 	const line = document.getText(Range.create(position.line, 0, position.line + 1, 0));
 
 	let start = position.character - 1;
@@ -507,6 +509,8 @@ function findTokenBeforePosition(tokens: string[], document: TreeSitterDocument,
 	while (start >= 0) {
 		if (tokens.includes(line[start])) {
 			return Position.create(position.line, start);
+		} else if (!spacePattern.test(line[start])) {
+			return null;
 		}
 
 		start--;
