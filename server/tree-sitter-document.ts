@@ -108,7 +108,7 @@ export class TreeSitterDocument {
         let end = position.character;
 
         // Make sure the cursor is on an identifier
-        if (!identifierRegex.test(line[start])) {
+        if (!identifierRegex.test(line[Math.max(0, position.character - 1)]) && !identifierRegex.test(line[end])) {
             return null;
         }
 
@@ -116,7 +116,7 @@ export class TreeSitterDocument {
             start--;
         }
 
-        while (end < line.length - 1 && identifierRegex.test(line[end + 1])) {
+        while (end < line.length && identifierRegex.test(line[end])) {
             end++;
         }
 
