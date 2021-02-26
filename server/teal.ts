@@ -206,7 +206,13 @@ export namespace Teal {
     }
 
     export async function getVersion(): Promise<MajorMinorPatch | null> {
-        const commandResult = await Teal.runCommand(Teal.TLCommand.Version);
+        let commandResult: TLCommandIOInfo;
+
+        try {
+            commandResult = await Teal.runCommand(Teal.TLCommand.Version);
+        } catch (e) {
+            return null;
+        }
 
         const majorMinorPatch = commandResult.stdout.match(/(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)/);
 
