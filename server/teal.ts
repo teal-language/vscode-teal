@@ -98,7 +98,7 @@ export namespace Teal {
             }
         }
 
-        return 0;
+        return -1;
     }
 
     export function symbolsInScope(typeReport: TypeReport, y: number, x: number): Map<string, Symbol> {
