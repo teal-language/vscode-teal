@@ -140,7 +140,7 @@ export namespace Teal {
 
         return result
     }
-    
+
     /**
      * Runs a `tl` command on a specific text.
      */
@@ -160,6 +160,8 @@ export namespace Teal {
             throw error;
         }
     }
+
+    const tlNotFoundErrorMessage = "Could not find the tl executable. Please make sure that it is available in the PATH.";
 
     export async function runCommand(command: TLCommand, filePath?: string): Promise<TLCommandIOInfo> {
         let child: any;
@@ -184,14 +186,17 @@ export namespace Teal {
 
             child.on('error', function (error: any) {
                 if (error.code === 'ENOENT') {
-                    let errorMessage = "Could not find the tl executable. Please make sure that it is available in the PATH.";
-                    reject(new TLNotFoundError(errorMessage));
+                    reject(new TLNotFoundError(tlNotFoundErrorMessage));
                 } else {
                     reject(error);
                 }
             });
 
             child.on('close', function (exitCode: any) {
+                if (exitCode !== 0 && stderr.startsWith("'tl' is not recognized as an internal or external command")) {
+                    reject(new TLNotFoundError(tlNotFoundErrorMessage));
+                }
+
                 resolve({ filePath: filePath ? filePath : null, stdout: stdout, stderr: stderr });
             });
 
@@ -234,7 +239,7 @@ export namespace Teal {
         result = result.replace(/@a/gm, "T");
         result = result.replace(/@b/gm, "U");
         result = result.replace(/\band\b/gm, "&")
-    
+
         return result
     }
 };
