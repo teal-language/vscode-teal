@@ -49,6 +49,7 @@
         ]
     },
     "dependencies": {
+        "shell-quote": "^1.7.2",
         "tmp-promise": "^3.0.2",
         "vscode-languageclient": "^7.0.0",
         "vscode-languageserver": "^7.0.0",
@@ -59,6 +60,7 @@
     "devDependencies": {
         "@types/mocha": "^8.2.0",
         "@types/node": "^14.14.22",
+        "@types/shell-quote": "^1.7.0",
         "@types/tmp": "^0.2.0",
         "@types/vscode": "^1.52.0",
         "mocha": "^8.3.0",

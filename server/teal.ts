@@ -3,6 +3,7 @@ import { spawn } from 'child_process';
 import { writeFile } from './file-utils';
 import { Location } from 'vscode-languageserver/node';
 import { MajorMinorPatch } from './major-minor-patch';
+import { quote } from 'shell-quote';
 
 export namespace Teal {
     class TLNotFoundError extends Error { /* ... */ }
@@ -163,25 +164,19 @@ export namespace Teal {
     export async function runCommand(command: TLCommand, filePath?: string): Promise<TLCommandIOInfo> {
         let child: any;
 
-        let platform = process.platform;
+        let isWindows = process.platform == "win32";
 
-        if (platform == "win32") {
-            let args = ['/c', "tl.bat", "-q", command];
+        let args = ["-q", command];
 
-            if (filePath !== undefined) {
-                args.push(filePath);
+        if (filePath !== undefined) {
+            if (isWindows) {
+                filePath = quote([filePath]);
             }
 
-            child = spawn('cmd.exe', args);
-        } else {
-            let args = ["-q", command];
-
-            if (filePath !== undefined) {
-                args.push(filePath);
-            }
-
-            child = spawn("tl", args);
+            args.push(filePath);
         }
+
+        child = spawn("tl", args, { shell: isWindows });
 
         return await new Promise(async function (resolve, reject) {
             let stdout = "";
