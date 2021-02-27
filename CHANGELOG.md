@@ -1,3 +1,11 @@
+### 0.7.5
+
+- Minor adjustments to support tl 0.12.0
+- Fix calculation of word ranges
+- Fix crash on empty symbols list
+- Fix detection of 'tl not found' errors on Windows
+- Support both the LuaRocks and standalone versions of tl on Windows
+
 ### 0.7.0 - February 16 2021
 
 This release adds support for . and : auto-completions. Also, the server now tries to filter the suggestions depending on context (for instance, function symbols should not appear in the suggestions when typing a type annotation)

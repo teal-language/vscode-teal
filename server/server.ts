@@ -99,7 +99,7 @@ async function verifyMinimumTLVersion() {
 	const tlVersion = await Teal.getVersion();
 
 	if (tlVersion !== null) {
-		const targetVersion = new MajorMinorPatch(0, 11, 2);
+		const targetVersion = new MajorMinorPatch(0, 12, 0);
 
 		console.log(`tl version: ${tlVersion.major}.${tlVersion.minor}.${tlVersion.patch}`);
 
