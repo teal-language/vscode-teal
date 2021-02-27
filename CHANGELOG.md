@@ -1,4 +1,4 @@
-### 0.7.5
+### 0.7.5 - February 27 2021
 
 - Minor adjustments to support tl 0.12.0
 - Fix calculation of word ranges
