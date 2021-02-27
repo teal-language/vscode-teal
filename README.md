@@ -6,7 +6,7 @@ Provides IntelliSense and syntax highlighting for [Teal](https://github.com/teal
 
 ## Requirements
 
-Make sure that the Teal compiler (v0.11.0 or later) is available in your PATH:
+Make sure that the Teal compiler (v0.12.0 or later) is available in your PATH:
 ```
 luarocks install tl
 ```
