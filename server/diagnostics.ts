@@ -11,7 +11,7 @@ export namespace TealLS {
         const crashPattern = /stack traceback:/m;
     
         if (crashPattern.test(checkResult.stderr)) {
-            throw checkResult.stderr;
+            throw new Error(checkResult.stderr);
         }
     
         const errorPattern = /(?<fileName>^.*?):(?<lineNumber>\d+):((?<columnNumber>\d+):)? (?<errorMessage>.+)$/gm;
