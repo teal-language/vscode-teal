@@ -379,6 +379,7 @@ export async function autoComplete(document: TreeSitterDocument, position: Posit
         "boolean",
         "thread",
         "nil",
+        "integer"
     ].map(x => makeBasicItem(x, CompletionItemKind.Interface)));
 
     for (const [symbolIdentifier, symbol] of symbols) {
