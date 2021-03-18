@@ -1,3 +1,7 @@
+### 0.7.6 - March 18 2021
+
+Add 'integer' to the list of built-in keywords.
+
 ### 0.7.5 - February 27 2021
 
 - Minor adjustments to support tl 0.12.0
