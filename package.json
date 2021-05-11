@@ -64,11 +64,9 @@
         "@types/tmp": "^0.2.0",
         "@types/vscode": "^1.56.0",
         "mocha": "^8.4.0",
-        "ovsx": "0.1.0",
         "tree-sitter-cli": "^0.19.4",
         "tree-sitter-teal": "github:euclidianAce/tree-sitter-teal#1f95621",
-        "typescript": "^4.2.4",
-        "vsce": "^1.88.0"
+        "typescript": "^4.2.4"
     },
     "scripts": {
         "package": "vsce package",
