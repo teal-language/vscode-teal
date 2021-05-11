@@ -5,4 +5,8 @@ node_js:
 script:
   - npm run build
   - npm test
-  
+
+notifications:
+  email:
+    on_success: never
+    on_failure: change
