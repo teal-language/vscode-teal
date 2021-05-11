@@ -9,7 +9,7 @@
         "url": "https://github.com/teal-language/vscode-teal.git"
     },
     "engines": {
-        "vscode": "^1.56.0"
+        "vscode": "^1.55.2"
     },
     "categories": [
         "Programming Languages"
@@ -62,11 +62,12 @@
         "@types/node": "^15.0.2",
         "@types/shell-quote": "^1.7.0",
         "@types/tmp": "^0.2.0",
-        "@types/vscode": "^1.56.0",
+        "@types/vscode": "^1.55.2",
         "mocha": "^8.4.0",
         "tree-sitter-cli": "^0.18.0",
         "tree-sitter-teal": "github:euclidianAce/tree-sitter-teal#a76d4a7",
-        "typescript": "^4.2.4"
+        "typescript": "^4.2.4",
+        "vsce": "^1.88.0"
     },
     "scripts": {
         "package": "vsce package",
