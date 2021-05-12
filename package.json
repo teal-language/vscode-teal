@@ -65,7 +65,7 @@
         "@types/vscode": "^1.55.2",
         "mocha": "^8.4.0",
         "tree-sitter-cli": "^0.18.0",
-        "tree-sitter-teal": "github:euclidianAce/tree-sitter-teal#a76d4a7",
+        "tree-sitter-teal": "https://github.com/euclidianAce/tree-sitter-teal/tarball/v0.0.4",
         "typescript": "^4.2.4",
         "vsce": "^1.88.0"
     },
