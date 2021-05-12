@@ -5,7 +5,11 @@ node_js:
   - node
 
 before_install:
-  - sudo apt-get -y install emscripten
+  - git clone https://github.com/emscripten-core/emsdk.git --depth=1
+  - cd emsdk
+  - ./emsdk install latest
+  - ./emsdk activate latest
+  - source emsdk_env.sh
 
 script:
   - npm run package
