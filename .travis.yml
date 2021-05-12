@@ -10,6 +10,7 @@ before_install:
   - ./emsdk install latest
   - ./emsdk activate latest
   - source emsdk_env.sh
+  - cd ..
 
 script:
   - npm run package
