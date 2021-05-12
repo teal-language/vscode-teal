@@ -1,6 +1,11 @@
+dist: bionic
+
 language: node_js
 node_js:
   - node
+
+before_install:
+  - sudo apt-get -y install emscripten
 
 script:
   - npm run package
