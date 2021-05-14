@@ -13,7 +13,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [12.x, 14.x]
+        node-version: [14.x]
 
     steps:
     - uses: actions/checkout@v2
@@ -21,6 +21,11 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
+    - uses: mymindstorm/setup-emsdk@v9
+      with:
+        version: latest
+        actions-cache-folder: 'emsdk-cache'
+    - run: emcc -v
     - run: npm ci
     - run: npm run package
       env:
