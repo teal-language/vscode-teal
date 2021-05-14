@@ -26,7 +26,7 @@ jobs:
         cd emsdk
         ./emsdk install latest
         ./emsdk activate latest
-        source emdsk_env.sh
+        source emsdk_env.sh
         cd ..
     - run: emcc -v
     - run: npm ci
