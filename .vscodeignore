@@ -6,3 +6,4 @@ scripts/**
 test/**
 out/test/**
 .github/**
+emsdk-cache/**
