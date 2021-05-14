@@ -72,8 +72,9 @@
     "scripts": {
         "package": "vsce package",
         "vscode:prepublish": "npm run build",
-        "build": "tsc -b && tree-sitter build-wasm node_modules/tree-sitter-teal && node scripts/post-build.js",
+        "build": "tsc -b && npm run generate-grammar && tree-sitter build-wasm node_modules/tree-sitter-teal && node scripts/post-build.js",
         "watch": "tsc -b -w",
-        "test": "mocha out/test/**/*.spec.js"
+        "test": "mocha out/test/**/*.spec.js",
+        "generate-grammar": "cd node_modules/tree-sitter-teal && tree-sitter generate"
     }
 }
