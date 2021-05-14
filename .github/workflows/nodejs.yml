@@ -13,7 +13,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [12.x, 14.x]
+        node-version: [14.x]
 
     steps:
     - uses: actions/checkout@v2
@@ -21,6 +21,12 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
+    - run: |
+        git clone 'https://github.com/emscripten-core/emsdk.git' --depth=1
+        cd emsdk
+        ./emsdk install latest
+        ./emsdk activate latest
+        cd ..
     - run: npm ci
     - run: npm run package
       env:
