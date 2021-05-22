@@ -83,10 +83,5 @@
 		"watch": "tsc -b -w",
 		"test": "mocha out/test/**/*.spec.js",
 		"generate-grammar": "cd node_modules/tree-sitter-teal && tree-sitter generate"
-	},
-	"__metadata": {
-		"id": "be137735-dc2d-42b8-b16d-70185e796935",
-		"publisherDisplayName": "Patrick Desaulniers",
-		"publisherId": "99957110-3f45-4195-8896-95ce950ce76c"
 	}
 }
