@@ -23,7 +23,7 @@ jobs:
         node-version: ${{ matrix.node-version }}
     - uses: mymindstorm/setup-emsdk@v9
       with:
-        version: latest
+        version: 2.0.21
         actions-cache-folder: 'emsdk-cache'
     - run: emcc -v
     - run: npm ci
