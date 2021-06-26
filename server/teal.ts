@@ -193,10 +193,6 @@ export namespace Teal {
             });
 
             child.on('close', function (exitCode: any) {
-                if (exitCode !== 0 && stderr.startsWith("'tl' is not recognized as an internal or external command")) {
-                    reject(new TLNotFoundError(tlNotFoundErrorMessage));
-                }
-
                 resolve({ filePath: filePath ? filePath : null, stdout: stdout, stderr: stderr });
             });
 
