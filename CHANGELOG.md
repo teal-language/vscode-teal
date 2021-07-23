@@ -1,3 +1,10 @@
+### 0.8.0 - July 23 2021
+
+- Differentiate between warnings and errors
+- Added a file icon theme (thanks @kdserra!)
+- The extension can now be used with workspaces that contain multiple tlconfig.lua files; see https://github.com/teal-language/vscode-teal/issues/43 for an explanation
+- Updated dependencies
+
 ### 0.7.6 - March 18 2021
 
 Add 'integer' to the list of built-in keywords.
