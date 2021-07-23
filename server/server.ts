@@ -223,7 +223,7 @@ async function _feedTypeInfoCache(uri: string) {
 	let typesCmdResult: Teal.TLCommandIOInfo;
 
 	try {
-		typesCmdResult = await Teal.runCommandOnText(Teal.TLCommand.Types, documentText);
+		typesCmdResult = await Teal.runCommandOnText(Teal.TLCommand.Types, documentText, textDocument.getFilePath());
 	} catch (error) {
 		showErrorMessage("[Error]\n" + error.message);
 		return null;

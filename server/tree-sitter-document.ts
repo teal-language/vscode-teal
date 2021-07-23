@@ -2,6 +2,7 @@ import * as Parser from 'web-tree-sitter';
 import * as path from "path";
 import { TextDocumentContentChangeEvent, Range, Position } from 'vscode-languageserver/node';
 import { TextDocument } from 'vscode-languageserver-textdocument';
+import { URI } from 'vscode-uri';
 
 export class TreeSitterDocument {
     private _parser: Parser | null;
@@ -97,6 +98,14 @@ export class TreeSitterDocument {
         }
 
         return this._document.getText(range);
+    }
+
+    public getFilePath(): string {
+        return URI.parse(this._uri).fsPath;
+    }
+
+    public getDirectory(): string {
+        return path.dirname(this.getFilePath());
     }
 
     public getWordRangeAtPosition(position: Position): Range | null {

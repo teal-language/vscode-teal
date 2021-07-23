@@ -1,9 +1,10 @@
 import { withFile } from 'tmp-promise'
 import { spawn } from 'child_process';
-import { writeFile } from './file-utils';
+import { upwardSearch, writeFile } from './file-utils';
 import { Location } from 'vscode-languageserver/node';
 import { MajorMinorPatch } from './major-minor-patch';
 import { quote } from 'shell-quote';
+import path = require('path');
 
 export namespace Teal {
     class TLNotFoundError extends Error { /* ... */ }
@@ -143,14 +144,28 @@ export namespace Teal {
 
     /**
      * Runs a `tl` command on a specific text.
+     * @param command The command.
+     * @param text The text.
+     * @param filePath The path of the file associated with the text.
      */
-    export async function runCommandOnText(command: TLCommand, text: string): Promise<TLCommandIOInfo> {
+    export async function runCommandOnText(command: TLCommand, text: string, filePath: string): Promise<TLCommandIOInfo> {
+        const fileDir = path.dirname(filePath);
+
+        // We try to set the cwd to the same location as the parent tlconfig.lua
+        const configPath = await upwardSearch(fileDir, "tlconfig.lua", 20);
+
+        let parentConfigDir: string | undefined;
+
+        if (configPath !== undefined) {
+            parentConfigDir = path.dirname(configPath);
+        }
+
         try {
             return await withFile(async ({ path, fd }) => {
                 await writeFile(fd, text);
 
                 try {
-                    let result = await runCommand(command, path);
+                    let result = await runCommand(command, path, parentConfigDir ?? undefined);
                     return result;
                 } catch (error) {
                     throw error;
@@ -161,9 +176,9 @@ export namespace Teal {
         }
     }
 
-    const tlNotFoundErrorMessage = "Could not find the tl executable. Please make sure that it is available in the PATH.";
+    export const tlNotFoundErrorMessage = "Could not find the tl executable. Please make sure that it is available in the PATH.";
 
-    export async function runCommand(command: TLCommand, filePath?: string): Promise<TLCommandIOInfo> {
+    export async function runCommand(command: TLCommand, filePath?: string, cwd?: string): Promise<TLCommandIOInfo> {
         let child: any;
 
         let isWindows = process.platform == "win32";
@@ -178,7 +193,10 @@ export namespace Teal {
             args.push(filePath);
         }
 
-        child = spawn("tl", args, { shell: isWindows });
+        child = spawn("tl", args, {
+            shell: isWindows,
+            cwd: cwd
+        });
 
         return await new Promise(async function (resolve, reject) {
             let stdout = "";
