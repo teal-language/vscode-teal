@@ -1,12 +1,15 @@
 import * as path from "path";
 import { Diagnostic, DiagnosticSeverity, Range } from "vscode-languageserver/node";
-import { pathInWorkspace } from "./server";
+import { URI } from "vscode-uri";
+import { getDocumentUri } from "./server";
 import { Teal } from "./teal";
 import { TreeSitterDocument } from "./tree-sitter-document";
 
 export namespace TealLS {
     export async function validateTextDocument(textDocument: TreeSitterDocument): Promise<Map<string, Diagnostic[]>> {
-        const checkResult = await Teal.runCommandOnText(Teal.TLCommand.Check, textDocument.getText(), textDocument.getFilePath());;
+        const projectRoot = await textDocument.getProjectRoot();
+
+        const checkResult = await Teal.runCommandOnText(Teal.TLCommand.Check, textDocument.getText(), projectRoot);
 
         const crashPattern = /stack traceback:/m;
 
@@ -14,8 +17,8 @@ export namespace TealLS {
             throw new Error(checkResult.stderr);
         }
 
-        const warningSectionPattern = /^========================================\n\d+ warning(s)?:\n/gm;
-        const errorSectionPattern = /^========================================\n\d+ error(s)?:\n/gm;
+        const warningCountPattern = /^\d+ warning(s)?:$/;
+        const errorCountPattern = /^\d+ error(s)?:$/;
         const errorMessagePattern = /(?<fileName>^.*?):(?<lineNumber>\d+):((?<columnNumber>\d+):)? (?<errorMessage>.+)$/gm;
 
         let diagnosticsByPath = new Map<string, Diagnostic[]>();
@@ -28,12 +31,8 @@ export namespace TealLS {
             while ((syntaxError = errorMessagePattern.exec(compilerOutput))) {
                 const groups = syntaxError.groups!;
 
-                let errorPath = path.normalize(groups.fileName);
-                let fullPath = await pathInWorkspace(textDocument, errorPath);
-
-                if (fullPath === null) {
-                    continue;
-                }
+                let errorPath = path.resolve(projectRoot ?? "", groups.fileName);
+                let errorURI = getDocumentUri(textDocument, errorPath);
 
                 let lineNumber = Number.parseInt(groups.lineNumber) - 1;
                 let columnNumber = Number.MAX_VALUE;
@@ -45,7 +44,7 @@ export namespace TealLS {
                 let errorMessage = groups.errorMessage;
 
                 // Avoid showing the temporary file's name in the error message
-                errorMessage = errorMessage.replace(errorPath, fullPath);
+                errorMessage = errorMessage.replace(errorPath, textDocument.getFilePath());
 
                 let range = Range.create(lineNumber, columnNumber, lineNumber, columnNumber);
 
@@ -56,34 +55,30 @@ export namespace TealLS {
                     source: 'tl check'
                 };
 
-                let arr = diagnosticsByPath.get(fullPath);
+                let arr = diagnosticsByPath.get(errorURI);
 
                 if (arr) {
                     arr.push(diagnostic);
                 } else {
-                    diagnosticsByPath.set(fullPath, [diagnostic]);
+                    diagnosticsByPath.set(errorURI, [diagnostic]);
                 }
             }
         }
 
-        let warningSectionIndex = checkResult.stderr.search(warningSectionPattern);
-        let errorSectionIndex = checkResult.stderr.search(errorSectionPattern);
+        let compilerOutput = checkResult.stderr.split("\n");
 
-        if (warningSectionIndex !== -1) {
-            let warnings = checkResult.stderr;
+        let warningSection = false;
 
-            // Remove the errors from the warnings (we assume errors are shown AFTER warnings)
-            if (errorSectionIndex !== -1) {
-                warnings = warnings.substr(0, errorSectionIndex)
+        for (let line of compilerOutput) {
+            if (warningCountPattern.test(line)) {
+                warningSection = true;
             }
-
-            await execPattern(warnings, DiagnosticSeverity.Warning);
-        }
-
-        if (errorSectionIndex !== -1) {
-            let errors = checkResult.stderr.substring(errorSectionIndex);
-
-            await execPattern(errors, DiagnosticSeverity.Error);
+            else if (errorCountPattern.test(line)) {
+                warningSection = false;
+            }
+            else {
+                await execPattern(line, warningSection ? DiagnosticSeverity.Warning : DiagnosticSeverity.Error);
+            }
         }
 
         return diagnosticsByPath;

@@ -146,26 +146,15 @@ export namespace Teal {
      * Runs a `tl` command on a specific text.
      * @param command The command.
      * @param text The text.
-     * @param filePath The path of the file associated with the text.
+     * @param projectRoot The directory which contains the tlconfig.lua file to use for running the command.
      */
-    export async function runCommandOnText(command: TLCommand, text: string, filePath: string): Promise<TLCommandIOInfo> {
-        const fileDir = path.dirname(filePath);
-
-        // We try to set the cwd to the same location as the parent tlconfig.lua
-        const configPath = await upwardSearch(fileDir, "tlconfig.lua", 20);
-
-        let parentConfigDir: string | undefined;
-
-        if (configPath !== undefined) {
-            parentConfigDir = path.dirname(configPath);
-        }
-
+    export async function runCommandOnText(command: TLCommand, text: string, projectRoot?: string): Promise<TLCommandIOInfo> {
         try {
             return await withFile(async ({ path, fd }) => {
                 await writeFile(fd, text);
 
                 try {
-                    let result = await runCommand(command, path, parentConfigDir ?? undefined);
+                    let result = await runCommand(command, path, projectRoot);
                     return result;
                 } catch (error) {
                     throw error;

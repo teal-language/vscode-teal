@@ -3,6 +3,7 @@ import * as path from "path";
 import { TextDocumentContentChangeEvent, Range, Position } from 'vscode-languageserver/node';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { URI } from 'vscode-uri';
+import { upwardSearch } from './file-utils';
 
 export class TreeSitterDocument {
     private _parser: Parser | null;
@@ -106,6 +107,22 @@ export class TreeSitterDocument {
 
     public getDirectory(): string {
         return path.dirname(this.getFilePath());
+    }
+
+    /**
+     * Returns the directory which contains the parent tlconfig.lua file.
+     */
+    public async getProjectRoot(): Promise<string | undefined> {
+        const fileDir = path.dirname(this.getFilePath());
+
+        // We try to set the cwd to the same location as the parent tlconfig.lua
+        const configLocation = await upwardSearch(fileDir, "tlconfig.lua", 20);
+
+        if (configLocation === undefined) {
+            return undefined;
+        }
+
+        return path.dirname(configLocation);
     }
 
     public getWordRangeAtPosition(position: Position): Range | null {

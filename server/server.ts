@@ -223,7 +223,7 @@ async function _feedTypeInfoCache(uri: string) {
 	let typesCmdResult: Teal.TLCommandIOInfo;
 
 	try {
-		typesCmdResult = await Teal.runCommandOnText(Teal.TLCommand.Types, documentText, textDocument.getFilePath());
+		typesCmdResult = await Teal.runCommandOnText(Teal.TLCommand.Types, documentText, await textDocument.getProjectRoot());
 	} catch (error) {
 		showErrorMessage("[Error]\n" + error.message);
 		return null;
@@ -324,30 +324,12 @@ connection.onDidChangeWatchedFiles(_change => {
 	}
 });
 
-export async function pathInWorkspace(textDocument: TreeSitterDocument, pathToCheck: string): Promise<string | null> {
+export function getDocumentUri(textDocument: TreeSitterDocument, pathToCheck: string): string {
 	if (path.basename(pathToCheck).startsWith(Teal.TmpBufferPrefix)) {
 		return textDocument.uri
 	}
 
-	let workspaceFolders = await connection.workspace.getWorkspaceFolders();
-
-	if (workspaceFolders === null) {
-		return null;
-	}
-
-	let resolvedPath: string | null = null;
-
-	for (const folder of workspaceFolders) {
-		let folderPath = URI.parse(folder.uri).fsPath
-		let fullPath = path.join(folderPath, pathToCheck);
-
-		if (await fileExists(fullPath)) {
-			resolvedPath = URI.file(fullPath).toString()
-			break;
-		}
-	};
-
-	return resolvedPath;
+	return URI.file(pathToCheck).toString();
 }
 
 async function _validateTextDocument(uri: string): Promise<void> {
@@ -613,7 +595,9 @@ async function getTypeInfoAtPosition(uri: string, position: Position): Promise<T
 			typeFile = tmpPath;
 		}
 
-		let destinationUri: string | null = await pathInWorkspace(textDocument, typeFile);
+		typeFile = path.resolve(await textDocument.getProjectRoot() ?? "", typeFile);
+
+		let destinationUri = getDocumentUri(textDocument, typeFile);
 
 		if (destinationUri !== null) {
 			destinationLocation = Location.create(destinationUri, destinationRange);
