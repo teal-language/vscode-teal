@@ -95,7 +95,7 @@ let settingsCache: Map<string, TealServerSettings> = new Map();
 // Cache "tl types" queries of all open documents
 let typesCommandCache: Map<string, Teal.TLTypesCommandResult> = new Map();
 
-async function verifyMinimumTLVersion() {
+async function verifyMinimumTLVersion(): Promise<boolean> {
 	const tlVersion = await Teal.getVersion();
 
 	if (tlVersion !== null) {
@@ -105,10 +105,16 @@ async function verifyMinimumTLVersion() {
 
 		if (tlVersion.compareTo(targetVersion) === -1) {
 			showErrorMessage(`[Warning]\nYou are using an outdated version of the tl compiler. Please upgrade tl to v${targetVersion.toString()} or later.`);
-			return null;
 		}
+
+		return true;
 	} else {
-		console.log("[Warning] tl version is null");
+		console.log("[Error] tl version is null");
+
+		// We assume that the compiler is not available in the PATH.
+		showErrorMessage(`[Error]\n${Teal.tlNotFoundErrorMessage}\n\nType-checking has been disabled for this file.`);
+
+		return false;
 	}
 }
 
@@ -124,8 +130,11 @@ connection.onDidChangeConfiguration((change) => {
 
 	// Revalidate all open text documents
 	documents.forEach(async function (x: TreeSitterDocument) {
-		verifyMinimumTLVersion();
-		validateTextDocument(x.uri);
+		const validVersion = await verifyMinimumTLVersion();
+
+		if (validVersion) {
+			validateTextDocument(x.uri);
+		}
 	});
 
 	typesCommandCache.clear();
@@ -258,7 +267,11 @@ export function getTypeInfoFromCache(uri: string): Teal.TLTypesCommandResult | n
 }
 
 connection.onDidOpenTextDocument(async (params) => {
-	verifyMinimumTLVersion();
+	const validVersion = await verifyMinimumTLVersion();
+
+	if (!validVersion) {
+		return;
+	}
 
 	const treeSitterDocument = new TreeSitterDocument();
 	await treeSitterDocument.init(params.textDocument.uri, params.textDocument.text);
