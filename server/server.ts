@@ -234,7 +234,12 @@ async function _feedTypeInfoCache(uri: string) {
 	}
 
 	if (isEmptyOrSpaces(typesCmdResult.stdout)) {
-		showErrorMessage("[Error]\n" + "`tl types` has returned an empty response.");
+		if (!isEmptyOrSpaces(typesCmdResult.stderr)) {
+			showErrorMessage(typesCmdResult.stderr);
+		} else {
+			showErrorMessage("[Error]\n" + "`tl types` has returned an empty response.");
+		}
+
 		return null;
 	}
 
