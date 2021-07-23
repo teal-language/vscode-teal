@@ -353,6 +353,7 @@ async function _validateTextDocument(uri: string): Promise<void> {
 			connection.sendDiagnostics({ uri: uri, diagnostics: diagnostics });
 		}
 	} catch (error) {
+		console.log("Error while reading diagnostics:", error);
 		showErrorMessage("[Error]\n" + error.message);
 		connection.sendDiagnostics({ uri: uri, diagnostics: [] });
 		return;

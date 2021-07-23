@@ -35,7 +35,7 @@ export namespace TealLS {
                 let errorURI = getDocumentUri(textDocument, errorPath);
 
                 let lineNumber = Number.parseInt(groups.lineNumber) - 1;
-                let columnNumber = Number.MAX_VALUE;
+                let columnNumber = compilerOutput.length - 1;
 
                 if (groups.columnNumber !== undefined) {
                     columnNumber = Number.parseInt(groups.columnNumber) - 1
