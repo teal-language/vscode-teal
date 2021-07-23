@@ -14,7 +14,9 @@ export namespace TealLS {
             throw new Error(checkResult.stderr);
         }
 
-        const errorPattern = /(?<fileName>^.*?):(?<lineNumber>\d+):((?<columnNumber>\d+):)? (?<errorMessage>.+)$/gm;
+        const warningSectionPattern = /^========================================\n\d+ warning(s)?:\n/gm;
+        const errorSectionPattern = /^========================================\n\d+ error(s)?:\n/gm;
+        const errorMessagePattern = /(?<fileName>^.*?):(?<lineNumber>\d+):((?<columnNumber>\d+):)? (?<errorMessage>.+)$/gm;
 
         let diagnosticsByPath = new Map<string, Diagnostic[]>();
 
@@ -22,44 +24,66 @@ export namespace TealLS {
 
         let syntaxError: RegExpExecArray | null;
 
-        while ((syntaxError = errorPattern.exec(checkResult.stderr))) {
-            const groups = syntaxError.groups!;
+        async function execPattern(compilerOutput: string, severity: DiagnosticSeverity) {
+            while ((syntaxError = errorMessagePattern.exec(compilerOutput))) {
+                const groups = syntaxError.groups!;
 
-            let errorPath = path.normalize(groups.fileName);
-            let fullPath = await pathInWorkspace(textDocument, errorPath);
+                let errorPath = path.normalize(groups.fileName);
+                let fullPath = await pathInWorkspace(textDocument, errorPath);
 
-            if (fullPath === null) {
-                continue;
+                if (fullPath === null) {
+                    continue;
+                }
+
+                let lineNumber = Number.parseInt(groups.lineNumber) - 1;
+                let columnNumber = Number.MAX_VALUE;
+
+                if (groups.columnNumber !== undefined) {
+                    columnNumber = Number.parseInt(groups.columnNumber) - 1
+                }
+
+                let errorMessage = groups.errorMessage;
+
+                // Avoid showing the temporary file's name in the error message
+                errorMessage = errorMessage.replace(errorPath, fullPath);
+
+                let range = Range.create(lineNumber, columnNumber, lineNumber, columnNumber);
+
+                let diagnostic: Diagnostic = {
+                    severity: severity,
+                    range: range,
+                    message: errorMessage,
+                    source: 'tl check'
+                };
+
+                let arr = diagnosticsByPath.get(fullPath);
+
+                if (arr) {
+                    arr.push(diagnostic);
+                } else {
+                    diagnosticsByPath.set(fullPath, [diagnostic]);
+                }
+            }
+        }
+
+        let warningSectionIndex = checkResult.stderr.search(warningSectionPattern);
+        let errorSectionIndex = checkResult.stderr.search(errorSectionPattern);
+
+        if (warningSectionIndex !== -1) {
+            let warnings = checkResult.stderr;
+
+            // Remove the errors from the warnings (we assume errors are shown AFTER warnings)
+            if (errorSectionIndex !== -1) {
+                warnings = warnings.substr(0, errorSectionIndex)
             }
 
-            let lineNumber = Number.parseInt(groups.lineNumber) - 1;
-            let columnNumber = Number.MAX_VALUE;
+            await execPattern(warnings, DiagnosticSeverity.Warning);
+        }
 
-            if (groups.columnNumber !== undefined) {
-                columnNumber = Number.parseInt(groups.columnNumber) - 1
-            }
+        if (errorSectionIndex !== -1) {
+            let errors = checkResult.stderr.substring(errorSectionIndex);
 
-            let errorMessage = groups.errorMessage;
-
-            // Avoid showing the temporary file's name in the error message
-            errorMessage = errorMessage.replace(errorPath, fullPath);
-
-            let range = Range.create(lineNumber, columnNumber, lineNumber, columnNumber);
-
-            let diagnostic: Diagnostic = {
-                severity: DiagnosticSeverity.Error,
-                range: range,
-                message: errorMessage,
-                source: 'tl check'
-            };
-
-            let arr = diagnosticsByPath.get(fullPath);
-
-            if (arr) {
-                arr.push(diagnostic);
-            } else {
-                diagnosticsByPath.set(fullPath, [diagnostic]);
-            }
+            await execPattern(errors, DiagnosticSeverity.Error);
         }
 
         return diagnosticsByPath;

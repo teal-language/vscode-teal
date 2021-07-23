@@ -183,7 +183,7 @@ export namespace Teal {
 
         let isWindows = process.platform == "win32";
 
-        let args = ["-q", command];
+        let args: string[] = [command];
 
         if (filePath !== undefined) {
             if (isWindows) {
