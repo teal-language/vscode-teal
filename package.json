@@ -62,19 +62,19 @@
 		"vscode-languageserver": "^7.0.0",
 		"vscode-languageserver-textdocument": "^1.0.1",
 		"vscode-uri": "^3.0.2",
-		"web-tree-sitter": "^0.19.3"
+		"web-tree-sitter": "^0.19.4"
 	},
 	"devDependencies": {
-		"@types/mocha": "^8.2.2",
-		"@types/node": "^15.0.2",
-		"@types/shell-quote": "^1.7.0",
-		"@types/tmp": "^0.2.0",
+		"@types/mocha": "^9.0.0",
+		"@types/node": "^16.4.1",
+		"@types/shell-quote": "^1.7.1",
+		"@types/tmp": "^0.2.1",
 		"@types/vscode": "^1.55.2",
-		"mocha": "^8.4.0",
-		"tree-sitter-cli": "^0.19.3",
+		"mocha": "^9.0.2",
+		"tree-sitter-cli": "^0.20.0",
 		"tree-sitter-teal": "https://github.com/euclidianAce/tree-sitter-teal/tarball/v0.0.4",
-		"typescript": "^4.2.4",
-		"vsce": "^1.88.0"
+		"typescript": "^4.3.5",
+		"vsce": "^1.96.1"
 	},
 	"scripts": {
 		"package": "vsce package",
