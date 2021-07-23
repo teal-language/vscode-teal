@@ -1,9 +1,9 @@
 import * as path from "path";
 import { Diagnostic, DiagnosticSeverity, Range } from "vscode-languageserver/node";
-import { URI } from "vscode-uri";
 import { getDocumentUri } from "./server";
 import { Teal } from "./teal";
 import { TreeSitterDocument } from "./tree-sitter-document";
+import { EOL } from "os";
 
 export namespace TealLS {
     export async function validateTextDocument(textDocument: TreeSitterDocument): Promise<Map<string, Diagnostic[]>> {
@@ -25,10 +25,10 @@ export namespace TealLS {
 
         diagnosticsByPath.set(textDocument.uri, []);
 
-        let syntaxError: RegExpExecArray | null;
-
         async function execPattern(compilerOutput: string, severity: DiagnosticSeverity) {
-            while ((syntaxError = errorMessagePattern.exec(compilerOutput))) {
+            let syntaxError = errorMessagePattern.exec(compilerOutput);
+
+            if (syntaxError !== null) {
                 const groups = syntaxError.groups!;
 
                 let errorPath = path.resolve(projectRoot ?? "", groups.fileName);
@@ -65,7 +65,7 @@ export namespace TealLS {
             }
         }
 
-        let compilerOutput = checkResult.stderr.split("\n");
+        let compilerOutput = checkResult.stderr.split(EOL);
 
         let warningSection = false;
 
