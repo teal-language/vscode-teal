@@ -172,7 +172,7 @@ export namespace Teal {
 
         let isWindows = process.platform == "win32";
 
-        let args: string[] = [command];
+        let args: string[] = [command, "--quiet"];
 
         if (filePath !== undefined) {
             if (isWindows) {

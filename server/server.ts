@@ -246,7 +246,6 @@ async function _feedTypeInfoCache(uri: string) {
 	try {
 		var json: any = JSON.parse(typesCmdResult.stdout);
 	} catch {
-		console.log(typesCmdResult.stderr);
 		showErrorMessage("[Error]\n" + "`tl types` has returned an invalid JSON response.");
 		return null;
 	};

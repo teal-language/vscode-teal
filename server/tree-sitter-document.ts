@@ -109,6 +109,10 @@ export class TreeSitterDocument {
         return path.dirname(this.getFilePath());
     }
 
+    public getFileName(): string {
+        return path.basename(this.getFilePath());
+    }
+
     /**
      * Returns the directory which contains the parent tlconfig.lua file.
      */
