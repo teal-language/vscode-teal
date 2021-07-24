@@ -1,3 +1,8 @@
+### 0.8.2 - July 23 2021
+
+- Better handling of errors in tlconfig.lua
+- Handle CRLF when reading diagnostics
+
 ### 0.8.0 - July 23 2021
 
 - Differentiate between warnings and errors
