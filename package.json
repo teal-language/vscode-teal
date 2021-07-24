@@ -2,7 +2,7 @@
 	"name": "vscode-teal",
 	"displayName": "Teal",
 	"description": "Teal language support for Visual Studio Code",
-	"version": "0.8.2",
+	"version": "0.8.3",
 	"license": "MIT",
 	"repository": {
 		"type": "git",
