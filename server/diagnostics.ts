@@ -19,7 +19,7 @@ export namespace TealLS {
 
         const warningCountPattern = /^\d+ warning(s)?:$/;
         const errorCountPattern = /^\d+ error(s)?:$/;
-        const errorMessagePattern = /(?<fileName>^.*?):(?<lineNumber>\d+):((?<columnNumber>\d+):)? (?<errorMessage>.+)$/gm;
+        const errorMessagePattern = /(?<fileName>^.*?):(?<lineNumber>\d+):((?<columnNumber>\d+):)? (?<errorMessage>.+)$/;
 
         let diagnosticsByPath = new Map<string, Diagnostic[]>();
 
