@@ -36,7 +36,7 @@ export function activate(context: ExtensionContext) {
 
 	// Options to control the language client
 	let clientOptions: LanguageClientOptions = {
-		// Register the server for .tl files
+		// Register the server for .tl files and tlconfig.lua
 		documentSelector: [
 			{ scheme: 'file', language: 'teal' },
 			{ scheme: 'file', language: 'lua', pattern: '**/tlconfig.lua' }

@@ -17,7 +17,8 @@
 	"icon": "assets/teal_logo.png",
 	"main": "./out/client/extension",
 	"activationEvents": [
-		"onLanguage:teal"
+		"onLanguage:teal",
+		"onLanguage:lua"
 	],
 	"publisher": "pdesaulniers",
 	"contributes": {
