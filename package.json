@@ -9,7 +9,7 @@
 		"url": "https://github.com/teal-language/vscode-teal.git"
 	},
 	"engines": {
-		"vscode": "^1.55.2"
+		"vscode": "^1.63.1"
 	},
 	"categories": [
 		"Programming Languages"
