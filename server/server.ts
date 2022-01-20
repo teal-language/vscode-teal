@@ -224,7 +224,7 @@ async function _feedTypeInfoCache(uri: string) {
 
 	try {
 		typesCmdResult = await Teal.runCommandOnText(Teal.TLCommand.Types, documentText, await textDocument.getProjectRoot());
-	} catch (error) {
+	} catch (error: any) {
 		showErrorMessage("[Error]\n" + error.message);
 		return null;
 	};
@@ -351,7 +351,7 @@ async function _validateTextDocument(uri: string): Promise<void> {
 		for (let [uri, diagnostics] of diagnosticsByPath.entries()) {
 			connection.sendDiagnostics({ uri: uri, diagnostics: diagnostics });
 		}
-	} catch (error) {
+	} catch (error: any) {
 		console.log("Error while reading diagnostics:", error);
 		showErrorMessage("[Error]\n" + error.message);
 		connection.sendDiagnostics({ uri: uri, diagnostics: [] });
