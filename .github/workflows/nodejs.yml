@@ -21,14 +21,7 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
-    - uses: mymindstorm/setup-emsdk@v9
-      with:
-        version: latest
-    - run: emcc -v
     - run: npm ci
     - run: npm run package
-      env:
-        CI: true
-    - run: npm test
       env:
         CI: true
