@@ -3,39 +3,27 @@
  * See LICENSE-vscode-extension-samples at the root of the project for licensing info.
  * ------------------------------------------------------------------------------------------ */
 
-import * as path from 'path';
-import { workspace, ExtensionContext } from 'vscode';
+import { workspace } from 'vscode';
+import { LanguageClient } from 'vscode-languageclient/node';
 
-import {
-	LanguageClient,
-	LanguageClientOptions,
-	ServerOptions,
-	TransportKind
-} from 'vscode-languageclient/node';
+let client;
 
-let client: LanguageClient;
+export function activate(context) {
+	console.log("Starting teal-language-server...");
 
-export function activate(context: ExtensionContext) {
-	// The server is implemented in node
-	let serverModule = context.asAbsolutePath(path.join('out', 'server', 'server.js'));
+	let serverExecutableName = "teal-language-server"
 
-	// The debug options for the server
-	// --inspect=6009: runs the server in Node's Inspector mode so VS Code can attach to the server for debugging
-	let debugOptions = { execArgv: ['--nolazy', '--inspect=6009'] };
+	let executable = {
+		command: serverExecutableName
+	};
 
-	// If the extension is launched in debug mode then the debug server options are used
-	// Otherwise the run options are used
-	let serverOptions: ServerOptions = {
-		run: { module: serverModule, transport: TransportKind.ipc },
-		debug: {
-			module: serverModule,
-			transport: TransportKind.ipc,
-			options: debugOptions
-		}
+	let serverOptions = {
+		run: executable,
+		debug: executable
 	};
 
 	// Options to control the language client
-	let clientOptions: LanguageClientOptions = {
+	let clientOptions = {
 		// Register the server for .tl files and tlconfig.lua
 		documentSelector: [
 			{ scheme: 'file', language: 'teal' },
@@ -60,11 +48,10 @@ export function activate(context: ExtensionContext) {
 	client.start();
 }
 
-export function deactivate(): Thenable<void> | undefined {
+export function deactivate() {
 	if (!client) {
 		return undefined;
 	}
 
 	return client.stop();
 }
-
