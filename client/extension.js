@@ -3,12 +3,12 @@
  * See LICENSE-vscode-extension-samples at the root of the project for licensing info.
  * ------------------------------------------------------------------------------------------ */
 
-import { workspace } from 'vscode';
-import { LanguageClient } from 'vscode-languageclient/node';
+const workspace = require("vscode").workspace;
+const LanguageClient = require("vscode-languageclient/node").LanguageClient;
 
 let client;
 
-export function activate(context) {
+function activate(context) {
 	console.log("Starting teal-language-server...");
 
 	let serverExecutableName = "teal-language-server"
@@ -48,10 +48,15 @@ export function activate(context) {
 	client.start();
 }
 
-export function deactivate() {
+function deactivate() {
 	if (!client) {
 		return undefined;
 	}
 
 	return client.stop();
 }
+
+module.exports = {
+	activate: activate,
+	deactivate: deactivate
+};
