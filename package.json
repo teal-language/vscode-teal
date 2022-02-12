@@ -15,7 +15,7 @@
 		"Programming Languages"
 	],
 	"icon": "assets/teal_logo.png",
-	"main": "./out/client/extension",
+	"main": "./client/extension",
 	"activationEvents": [
 		"onLanguage:teal",
 		"onLanguage:lua"
