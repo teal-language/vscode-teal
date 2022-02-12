@@ -61,5 +61,8 @@
 	},
 	"scripts": {
 		"package": "vsce package"
+	},
+	"devDependencies": {
+		"vsce": "^2.6.7"
 	}
 }
