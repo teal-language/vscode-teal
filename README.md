@@ -1,6 +1,4 @@
-# Teal for Visual Studio Code
-
-[![Node.js CI](https://img.shields.io/github/workflow/status/teal-language/vscode-teal/Node.js%20CI.svg?logo=github)](https://github.com/teal-language/vscode-teal/actions?query=workflow%3A%22Node.js+CI%22)
+# Teal for Visual Studio Code [![Build Status](https://img.shields.io/github/actions/workflow/status/teal-language/vscode-teal/nodejs.yml?branch=master)](https://github.com/teal-language/vscode-teal/actions/workflows/nodejs.yml)
 
 Provides IntelliSense and syntax highlighting for [Teal](https://github.com/teal-language/tl) in Visual Studio Code.
 
