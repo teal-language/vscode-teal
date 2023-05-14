@@ -82,6 +82,7 @@
 		"@types/shell-quote": "^1.7.1",
 		"@types/tmp": "^0.2.3",
 		"@types/vscode": "^1.78.0",
+		"@vscode/vsce": "^2.19.0",
 		"mocha": "^10.2.0",
 		"tree-sitter-cli": "^0.20.8",
 		"tree-sitter-teal": "https://github.com/euclidianAce/tree-sitter-teal/tarball/v0.0.4",
