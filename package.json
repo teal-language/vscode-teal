@@ -17,7 +17,6 @@
 	"icon": "assets/teal_logo.png",
 	"main": "./out/client/extension",
 	"activationEvents": [
-		"onLanguage:teal",
 		"onLanguage:lua"
 	],
 	"publisher": "pdesaulniers",
@@ -47,6 +46,10 @@
 				"extensions": [
 					".tl"
 				],
+				"icon": {
+					"dark": "assets/teal_icon_flat.svg",
+					"light": "assets/teal_icon_flat.svg"
+				},
 				"configuration": "./language-configuration.json"
 			}
 		],
@@ -61,13 +64,6 @@
 			{
 				"language": "teal",
 				"path": "./snippets/teal.json"
-			}
-		],
-		"iconThemes": [
-			{
-				"id": "teal-icons",
-				"label": "Teal Icons",
-				"path": "./fileicons/teal-icon-theme.json"
 			}
 		]
 	},
