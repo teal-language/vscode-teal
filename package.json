@@ -2,14 +2,14 @@
 	"name": "vscode-teal",
 	"displayName": "Teal",
 	"description": "Teal language support for Visual Studio Code",
-	"version": "0.8.3",
+	"version": "0.8.4",
 	"license": "MIT",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/teal-language/vscode-teal.git"
 	},
 	"engines": {
-		"vscode": "^1.78.0"
+		"vscode": "^1.82.0"
 	},
 	"categories": [
 		"Programming Languages"
@@ -78,15 +78,15 @@
 	},
 	"devDependencies": {
 		"@types/mocha": "^10.0.1",
-		"@types/node": "^20.1.4",
+		"@types/node": "^20.6.0",
 		"@types/shell-quote": "^1.7.1",
-		"@types/tmp": "^0.2.3",
-		"@types/vscode": "^1.78.0",
-		"@vscode/vsce": "^2.19.0",
+		"@types/tmp": "^0.2.4",
+		"@types/vscode": "^1.82.0",
+		"@vscode/vsce": "^2.21.0",
 		"mocha": "^10.2.0",
 		"tree-sitter-cli": "^0.20.8",
 		"tree-sitter-teal": "https://github.com/euclidianAce/tree-sitter-teal/tarball/v0.0.4",
-		"typescript": "^5.0.4"
+		"typescript": "^5.2.2"
 	},
 	"scripts": {
 		"package": "vsce package",
