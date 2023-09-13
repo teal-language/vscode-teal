@@ -1,3 +1,9 @@
+### 0.8.4 - September 13 2023
+
+- Add language icon
+- Fix syntax highlighting when a type is forward declared https://github.com/teal-language/vscode-teal/issues/54
+- Update dependencies
+
 ### 0.8.2 - July 23 2021
 
 - Better handling of errors in tlconfig.lua
