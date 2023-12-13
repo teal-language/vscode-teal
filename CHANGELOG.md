@@ -1,3 +1,7 @@
+### 0.9.0 - December 12 2023
+
+- Add 'teal.compilerPath' setting.
+
 ### 0.8.4 - September 13 2023
 
 - Add language icon
