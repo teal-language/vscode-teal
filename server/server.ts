@@ -93,10 +93,6 @@ const defaultSettings: TealServerSettings = {
 
 let globalSettings: TealServerSettings = defaultSettings;
 
-function getCompilerPath() {
-	return globalSettings.compilerPath;
-}
-
 // Cache the settings of all open documents
 let settingsCache: Map<string, TealServerSettings> = new Map();
 
@@ -138,16 +134,18 @@ connection.onDidChangeConfiguration((change) => {
 		);
 	}
 
+	typesCommandCache.clear();
+
 	// Revalidate all open text documents
 	documents.forEach(async function (x: TreeSitterDocument) {
-		const validVersion = await verifyMinimumTLVersion(globalSettings.compilerPath);
+		const settings = await getDocumentSettings(x.uri);
+
+		const validVersion = await verifyMinimumTLVersion(settings.compilerPath);
 
 		if (validVersion) {
 			validateTextDocument(x.uri);
 		}
 	});
-
-	typesCommandCache.clear();
 });
 
 async function getDocumentSettings(uri: string): Promise<TealServerSettings> {
