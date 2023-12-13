@@ -148,13 +148,13 @@ export namespace Teal {
      * @param text The text.
      * @param projectRoot The directory which contains the tlconfig.lua file to use for running the command.
      */
-    export async function runCommandOnText(command: TLCommand, text: string, projectRoot?: string): Promise<TLCommandIOInfo> {
+    export async function runCommandOnText(command: TLCommand, compilerPath: string, text: string, projectRoot?: string): Promise<TLCommandIOInfo> {
         try {
             return await withFile(async ({ path, fd }) => {
                 await writeFile(fd, text);
 
                 try {
-                    let result = await runCommand(command, path, projectRoot);
+                    let result = await runCommand(command, compilerPath, path, projectRoot);
                     return result;
                 } catch (error) {
                     throw error;
@@ -165,9 +165,9 @@ export namespace Teal {
         }
     }
 
-    export const tlNotFoundErrorMessage = "Could not find the tl executable. Please make sure that it is available in the PATH.";
+    export const tlNotFoundErrorMessage = "Could not find the tl executable or one of its dependencies. Please make sure that they are available in the PATH.";
 
-    export async function runCommand(command: TLCommand, filePath?: string, cwd?: string): Promise<TLCommandIOInfo> {
+    export async function runCommand(command: TLCommand, compilerPath: string, filePath?: string, cwd?: string): Promise<TLCommandIOInfo> {
         let child: any;
 
         let isWindows = process.platform == "win32";
@@ -182,7 +182,7 @@ export namespace Teal {
             args.push(filePath);
         }
 
-        child = spawn("tl", args, {
+        child = spawn(compilerPath, args, {
             shell: isWindows,
             cwd: cwd
         });
@@ -213,11 +213,11 @@ export namespace Teal {
         });
     }
 
-    export async function getVersion(): Promise<MajorMinorPatch | null> {
+    export async function getVersion(compilerPath: string): Promise<MajorMinorPatch | null> {
         let commandResult: TLCommandIOInfo;
 
         try {
-            commandResult = await Teal.runCommand(Teal.TLCommand.Version);
+            commandResult = await Teal.runCommand(Teal.TLCommand.Version, compilerPath);
         } catch (e) {
             return null;
         }

@@ -24,15 +24,10 @@
 		"configuration": {
 			"title": "Teal",
 			"properties": {
-				"teal.compilerPath.unix": {
+				"teal.compilerPath": {
 					"type": "string",
 					"default": "tl",
-					"description": "The path of the tl compiler on Unix-like platforms."
-				},
-				"teal.compilerPath.window": {
-					"type": "string",
-					"default": "tl.bat",
-					"description": "The path of the tl compiler on Windows."
+					"description": "The path of the tl compiler."
 				}
 			}
 		},

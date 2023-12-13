@@ -6,10 +6,10 @@ import { TreeSitterDocument } from "./tree-sitter-document";
 import { EOL } from "os";
 
 export namespace TealLS {
-    export async function validateTextDocument(textDocument: TreeSitterDocument): Promise<Map<string, Diagnostic[]>> {
+    export async function validateTextDocument(textDocument: TreeSitterDocument, compilerPath: string): Promise<Map<string, Diagnostic[]>> {
         const projectRoot = await textDocument.getProjectRoot();
 
-        const checkResult = await Teal.runCommandOnText(Teal.TLCommand.Check, textDocument.getText(), projectRoot);
+        const checkResult = await Teal.runCommandOnText(Teal.TLCommand.Check, compilerPath, textDocument.getText(), projectRoot);
 
         const crashPattern = /stack traceback:/m;
 

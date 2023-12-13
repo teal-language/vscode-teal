@@ -83,11 +83,19 @@ connection.onInitialized(() => {
 	}
 });
 
-interface TealServerSettings { };
+interface TealServerSettings {
+	compilerPath: string
+};
 
-const defaultSettings: TealServerSettings = {};
+const defaultSettings: TealServerSettings = {
+	compilerPath: "tl"
+};
 
 let globalSettings: TealServerSettings = defaultSettings;
+
+function getCompilerPath() {
+	return globalSettings.compilerPath;
+}
 
 // Cache the settings of all open documents
 let settingsCache: Map<string, TealServerSettings> = new Map();
@@ -95,8 +103,8 @@ let settingsCache: Map<string, TealServerSettings> = new Map();
 // Cache "tl types" queries of all open documents
 let typesCommandCache: Map<string, Teal.TLTypesCommandResult> = new Map();
 
-async function verifyMinimumTLVersion(): Promise<boolean> {
-	const tlVersion = await Teal.getVersion();
+async function verifyMinimumTLVersion(compilerPath: string): Promise<boolean> {
+	const tlVersion = await Teal.getVersion(compilerPath);
 
 	if (tlVersion !== null) {
 		const targetVersion = new MajorMinorPatch(0, 12, 0);
@@ -123,6 +131,8 @@ connection.onDidChangeConfiguration((change) => {
 		// Reset all cached document settings
 		settingsCache.clear();
 	} else {
+		console.log("onDidChangeConfiguration", change.settings);
+
 		globalSettings = <TealServerSettings>(
 			(change.settings.teal || defaultSettings)
 		);
@@ -130,7 +140,7 @@ connection.onDidChangeConfiguration((change) => {
 
 	// Revalidate all open text documents
 	documents.forEach(async function (x: TreeSitterDocument) {
-		const validVersion = await verifyMinimumTLVersion();
+		const validVersion = await verifyMinimumTLVersion(globalSettings.compilerPath);
 
 		if (validVersion) {
 			validateTextDocument(x.uri);
@@ -140,7 +150,7 @@ connection.onDidChangeConfiguration((change) => {
 	typesCommandCache.clear();
 });
 
-async function getDocumentSettings(uri: string): Promise<TealServerSettings | null> {
+async function getDocumentSettings(uri: string): Promise<TealServerSettings> {
 	if (!hasConfigurationCapability) {
 		return Promise.resolve(globalSettings);
 	}
@@ -154,7 +164,7 @@ async function getDocumentSettings(uri: string): Promise<TealServerSettings | nu
 		});
 
 		if (result === undefined) {
-			return null;
+			return defaultSettings;
 		}
 
 		settingsCache.set(uri, result);
@@ -223,7 +233,7 @@ async function _feedTypeInfoCache(uri: string) {
 	let typesCmdResult: Teal.TLCommandIOInfo;
 
 	try {
-		typesCmdResult = await Teal.runCommandOnText(Teal.TLCommand.Types, documentText, await textDocument.getProjectRoot());
+		typesCmdResult = await Teal.runCommandOnText(Teal.TLCommand.Types, settings.compilerPath, documentText, await textDocument.getProjectRoot());
 	} catch (error: any) {
 		showErrorMessage("[Error]\n" + error.message);
 		return null;
@@ -271,7 +281,9 @@ export function getTypeInfoFromCache(uri: string): Teal.TLTypesCommandResult | n
 }
 
 connection.onDidOpenTextDocument(async (params) => {
-	const validVersion = await verifyMinimumTLVersion();
+	const settings = await getDocumentSettings(params.textDocument.uri);
+
+	const validVersion = await verifyMinimumTLVersion(settings.compilerPath);
 
 	if (!validVersion) {
 		return;
@@ -346,7 +358,7 @@ async function _validateTextDocument(uri: string): Promise<void> {
 	let settings = await getDocumentSettings(textDocument.uri);
 
 	try {
-		const diagnosticsByPath = await TealLS.validateTextDocument(textDocument);
+		const diagnosticsByPath = await TealLS.validateTextDocument(textDocument, settings.compilerPath);
 
 		for (let [uri, diagnostics] of diagnosticsByPath.entries()) {
 			connection.sendDiagnostics({ uri: uri, diagnostics: diagnostics });
