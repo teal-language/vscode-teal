@@ -705,6 +705,10 @@
 							"include": "#comment"
 						},
 						{
+							"comment": "local type Rectangle = require('Geometry').Rectangle",
+							"include": "#function-call"
+						},
+						{
 							"include": "#record-block"
 						},
 						{
