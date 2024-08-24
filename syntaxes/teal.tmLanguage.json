@@ -204,7 +204,7 @@
 					"include": "#table-constructor"
 				},
 				{
-					"include": "#record-block"
+					"include": "#record-or-interface-block"
 				},
 				{
 					"include": "#enum-block"
@@ -621,18 +621,53 @@
 				}
 			]
 		},
-		"record-block": {
-			"begin": "\\brecord\\b",
+		"record-or-interface-block": {
+			"begin": "\\b(record|interface)\\b",
 			"end": "\\bend\\b",
 			"captures": {
 				"0": {
 					"name": "storage.type.record.teal"
 				}
 			},
-			"name": "statement.record-block.teal",
+			"name": "statement.record-or-interface-block.teal",
 			"patterns": [
 				{
 					"include": "#comment"
+				},
+				{
+					"begin": "\\b(is)\\b",
+					"end": "(?=\\bend\\b|\\bwhere\\b|\\brecord\\b|\\benum\\b|\\buserdata\\b|\\bmetamethod\\b|\\[|^\\s*[a-zA-Z_][a-zA-Z0-9_]*\\s*:)",
+					"captures": {
+						"0": {
+							"name": "keyword.other.teal"
+						}
+					},
+					"patterns": [
+						{
+							"include": "#comment"
+						},
+						{
+							"include": "#type"
+						}
+					]
+				},
+				{
+					"begin": "\\b(where)\\b",
+					"end": "(?=\\bend\\b|\\brecord\\b|\\benum\\b|\\buserdata\\b|\\bmetamethod\\b|\\[|^\\s*[a-zA-Z_][a-zA-Z0-9_]*\\s*:)",
+					"name": "where-clause.teal",
+					"captures": {
+						"0": {
+							"name": "keyword.control.teal"
+						}
+					},
+					"patterns": [
+						{
+							"include": "#comment"
+						},
+						{
+							"include": "#expression"
+						}
+					]
 				},
 				{
 					"comment": "Support ['key'] notation in record declarations; see https://github.com/teal-language/tl/issues/746#issuecomment-2108757909",
@@ -642,7 +677,7 @@
 					"include": "#enum-block"
 				},
 				{
-					"include": "#record-block"
+					"include": "#record-or-interface-block"
 				},
 				{
 					"include": "#new-type-declaration"
@@ -713,7 +748,7 @@
 							"include": "#function-call"
 						},
 						{
-							"include": "#record-block"
+							"include": "#record-or-interface-block"
 						},
 						{
 							"include": "#enum-block"
