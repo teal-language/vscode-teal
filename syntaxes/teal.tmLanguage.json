@@ -13,6 +13,9 @@
 		"base": {
 			"patterns": [
 				{
+					"include": "#pragma"
+				},
+				{
 					"include": "#comment"
 				},
 				{
@@ -26,6 +29,24 @@
 				},
 				{
 					"include": "#long-string"
+				}
+			]
+		},
+		"pragma": {
+			"patterns": [
+				{
+					"begin": "--#pragma",
+					"beginCaptures": {
+						"0": {
+							"name": "keyword.control.directive.pragma.teal"
+						}
+					},
+					"end": ".*$",
+					"endCaptures": {
+						"0": {
+							"name": "entity.other.attribute-name.pragma.preprocessor.teal"
+						}
+					}
 				}
 			]
 		},
