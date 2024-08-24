@@ -636,7 +636,7 @@
 				},
 				{
 					"begin": "\\b(is)\\b",
-					"end": "(?=\\bend\\b|\\bwhere\\b|\\brecord\\b|\\benum\\b|\\buserdata\\b|\\bmetamethod\\b|\\[|^\\s*[a-zA-Z_][a-zA-Z0-9_]*\\s*:)",
+					"end": "(?=\\bend\\b|\\bwhere\\b|\\brecord\\b|\\benum\\b|^\\s*\\buserdata\\b|^\\s*\\bmetamethod\\b|\\[|^\\s*[a-zA-Z_][a-zA-Z0-9_]*\\s*:)",
 					"captures": {
 						"0": {
 							"name": "keyword.other.teal"
@@ -653,7 +653,7 @@
 				},
 				{
 					"begin": "\\b(where)\\b",
-					"end": "(?=\\bend\\b|\\brecord\\b|\\benum\\b|\\buserdata\\b|\\bmetamethod\\b|\\[|^\\s*[a-zA-Z_][a-zA-Z0-9_]*\\s*:)",
+					"end": "(?=\\bend\\b|\\brecord\\b|\\benum\\b|^\\s*\\buserdata\\b|^\\s*\\bmetamethod\\b|\\[|^\\s*[a-zA-Z_][a-zA-Z0-9_]*\\s*:)",
 					"name": "where-clause.teal",
 					"captures": {
 						"0": {
