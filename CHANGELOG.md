@@ -1,3 +1,12 @@
+### 0.10.0 - August 25 2024
+
+- Improve syntax highlighting
+    + Interfaces
+    + Attributes
+    + Pragmas
+    + Support ['key'] notation in record declarations
+    + Support `local type X = require("module")` syntax
+
 ### 0.9.0 - December 12 2023
 
 - Add 'teal.compilerPath' setting.
