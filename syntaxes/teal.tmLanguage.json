@@ -29,6 +29,9 @@
 				},
 				{
 					"include": "#long-string"
+				},
+				{
+					"include": "#attribute"
 				}
 			]
 		},
@@ -197,6 +200,10 @@
 					"name": "invalid.illegal.character.escape.teal"
 				}
 			]
+		},
+		"attribute": {
+			"match": "<\\s*(const|close|total)\\s*>",
+			"name": "storage.modifier.teal"
 		},
 		"expression": {
 			"patterns": [
