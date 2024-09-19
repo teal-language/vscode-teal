@@ -66,7 +66,8 @@
 		"vscode-languageclient": "^9.0.1"
 	},
 	"scripts": {
-		"package": "vsce package"
+		"package": "vsce package",
+		"test": ""
 	},
 	"devDependencies": {
 		"@vscode/vsce": "^3.0.0"
