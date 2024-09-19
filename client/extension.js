@@ -9,7 +9,8 @@ function activate(context) {
 	let serverExecutableName = "teal-language-server"
 
 	let executable = {
-		command: serverExecutableName
+		command: serverExecutableName,
+		args: ["--verbose=true", "--log-mode=by_proj_path"]
 	};
 
 	let serverOptions = {
