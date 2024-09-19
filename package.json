@@ -15,7 +15,7 @@
 		"Programming Languages"
 	],
 	"icon": "assets/teal_logo.png",
-	"main": "./out/client/extension",
+	"main": "./client/extension",
 	"activationEvents": [
 		"onLanguage:lua"
 	],
@@ -63,32 +63,13 @@
 		]
 	},
 	"dependencies": {
-		"shell-quote": "^1.8.1",
-		"tmp-promise": "^3.0.3",
-		"vscode-languageclient": "^9.0.1",
-		"vscode-languageserver": "^9.0.1",
-		"vscode-languageserver-textdocument": "^1.0.12",
-		"vscode-uri": "^3.0.8",
-		"web-tree-sitter": "^0.22.6"
-	},
-	"devDependencies": {
-		"@types/mocha": "^10.0.7",
-		"@types/node": "^22.5.0",
-		"@types/shell-quote": "^1.7.5",
-		"@types/tmp": "^0.2.6",
-		"@types/vscode": "^1.92.0",
-		"@vscode/vsce": "^3.0.0",
-		"mocha": "^10.7.3",
-		"tree-sitter-cli": "^0.22.6",
-		"tree-sitter-teal": "https://github.com/euclidianAce/tree-sitter-teal/tarball/v0.0.4",
-		"typescript": "^5.5.4"
+		"vscode-languageclient": "^9.0.1"
 	},
 	"scripts": {
 		"package": "vsce package",
-		"vscode:prepublish": "npm run build",
-		"build": "tsc -b && npm run generate-grammar && tree-sitter build --wasm node_modules/tree-sitter-teal && node scripts/post-build.js",
-		"watch": "tsc -b -w",
-		"test": "mocha out/test/**/*.spec.js",
-		"generate-grammar": "cd node_modules/tree-sitter-teal && tree-sitter generate"
+		"test": ""
+	},
+	"devDependencies": {
+		"@vscode/vsce": "^3.0.0"
 	}
 }
