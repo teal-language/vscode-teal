@@ -9,7 +9,7 @@
 		"url": "https://github.com/teal-language/vscode-teal.git"
 	},
 	"engines": {
-		"vscode": "^1.92.0"
+		"vscode": "^1.96.0"
 	},
 	"categories": [
 		"Programming Languages"
@@ -63,25 +63,25 @@
 		]
 	},
 	"dependencies": {
-		"shell-quote": "^1.8.1",
+		"shell-quote": "^1.8.2",
 		"tmp-promise": "^3.0.3",
 		"vscode-languageclient": "^9.0.1",
 		"vscode-languageserver": "^9.0.1",
 		"vscode-languageserver-textdocument": "^1.0.12",
 		"vscode-uri": "^3.0.8",
-		"web-tree-sitter": "^0.22.6"
+		"web-tree-sitter": "^0.24.6"
 	},
 	"devDependencies": {
-		"@types/mocha": "^10.0.7",
-		"@types/node": "^22.5.0",
+		"@types/mocha": "^10.0.10",
+		"@types/node": "^22.10.5",
 		"@types/shell-quote": "^1.7.5",
 		"@types/tmp": "^0.2.6",
-		"@types/vscode": "^1.92.0",
-		"@vscode/vsce": "^3.0.0",
-		"mocha": "^10.7.3",
-		"tree-sitter-cli": "^0.22.6",
+		"@types/vscode": "^1.96.0",
+		"@vscode/vsce": "^3.2.1",
+		"mocha": "^11.0.1",
+		"tree-sitter-cli": "^0.24.6",
 		"tree-sitter-teal": "https://github.com/euclidianAce/tree-sitter-teal/tarball/v0.0.4",
-		"typescript": "^5.5.4"
+		"typescript": "^5.7.2"
 	},
 	"scripts": {
 		"package": "vsce package",
