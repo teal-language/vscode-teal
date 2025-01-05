@@ -1,3 +1,7 @@
+### 0.11.0 - January 5 2025
+
+- Autocompletion for enum members (thanks @BLKTower!)
+
 ### 0.10.0 - August 25 2024
 
 - Improve syntax highlighting
