@@ -277,6 +277,18 @@ function autoCompleteIndex(indexRoot: SyntaxNode, typeInfo: Teal.TLTypesCommandR
         }
     }
 
+    if (typeRef.enums !== undefined) {
+        const enumTypeDefinition = getTypeById(typeInfo, rootSymbol.typeId);
+        if (enumTypeDefinition !== null) {
+            for (const enumItem of typeRef.enums) {
+                const completionItem = makeEnumItem(enumTypeDefinition, enumItem, position);
+                if (completionItem !== null) {
+                    result.push(completionItem);
+                }
+            }
+        }
+    }
+
     return result;
 }
 
@@ -307,6 +319,36 @@ function makeTypeItem(typeInfo: Teal.TLTypesCommandResult, typeId: number, label
         data: typeDefinition,
         detail: detail,
         commitCharacters: ["("]
+    };
+}
+
+function makeEnumItem(typeDefinition: any, label: string, position: Position): CompletionItem | null {
+    const enumTypeStr = typeDefinition["str"];
+    if (enumTypeStr === undefined) {
+        return null;
+    }
+    let kind = CompletionItemKind.Enum;
+    return {
+        label: label,
+        kind: kind,
+        detail: label,
+        insertText: `"${label}"`,
+        // Replace `"EnumType."` with `""`.
+        additionalTextEdits: [
+            {
+                range: {
+                    start: {
+                        line: position.line,
+                        character: position.character - (enumTypeStr.length + 1),
+                    },
+                    end: {
+                        line: position.line,
+                        character: position.character,
+                    },
+                },
+                newText: "",
+            }
+        ],
     };
 }
 
