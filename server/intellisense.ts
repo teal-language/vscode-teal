@@ -279,7 +279,7 @@ function autoCompleteIndex(indexRoot: SyntaxNode, typeInfo: Teal.TLTypesCommandR
 
     if (typeRef.enums !== undefined) {
         const enumTypeDefinition = getTypeById(typeInfo, rootSymbol.typeId);
-        if (enumTypeDefinition !== null) {
+        if (enumTypeDefinition !== null && enumTypeDefinition.t === 0x00010004) {
             for (const enumItem of typeRef.enums) {
                 const completionItem = makeEnumItem(enumTypeDefinition, enumItem, position);
                 if (completionItem !== null) {
