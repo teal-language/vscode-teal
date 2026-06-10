@@ -63,7 +63,7 @@
 		]
 	},
 	"dependencies": {
-		"shell-quote": "^1.8.2",
+		"shell-quote": "^1.8.4",
 		"tmp-promise": "^3.0.3",
 		"vscode-languageclient": "^9.0.1",
 		"vscode-languageserver": "^9.0.1",
