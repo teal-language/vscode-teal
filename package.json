@@ -78,7 +78,7 @@
 		"@types/tmp": "^0.2.6",
 		"@types/vscode": "^1.96.0",
 		"@vscode/vsce": "^3.2.1",
-		"mocha": "^11.0.1",
+		"mocha": "^12.0.3",
 		"tree-sitter-cli": "^0.24.6",
 		"tree-sitter-teal": "https://github.com/euclidianAce/tree-sitter-teal/tarball/v0.0.4",
 		"typescript": "^5.7.2"
@@ -88,7 +88,7 @@
 		"vscode:prepublish": "npm run build",
 		"build": "tsc -b && npm run generate-grammar && tree-sitter build --wasm node_modules/tree-sitter-teal && node scripts/post-build.js",
 		"watch": "tsc -b -w",
-		"test": "mocha out/test/**/*.spec.js",
+		"test": "mocha out/test/**/*.spec.mjs",
 		"generate-grammar": "cd node_modules/tree-sitter-teal && tree-sitter generate"
 	}
 }
